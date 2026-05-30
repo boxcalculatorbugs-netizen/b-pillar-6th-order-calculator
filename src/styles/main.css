@@ -698,7 +698,8 @@ select:focus {
   display: none !important;
 }
 
-input.input-locked:disabled {
+input.input-locked:disabled,
+input.input-locked:read-only {
   opacity: 0.72;
   cursor: not-allowed;
   color: var(--accent);

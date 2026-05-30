@@ -26,7 +26,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 | **Parallel** | Vents to cabin | Vents to cabin | 0.732×r (flanged) both |
 | **Series** | Vents into front chamber | Vents to cabin | 0.614×r internal, 0.732×r external |
 
-**Default preset (Series):** dual **18"** wall — rear **10 cu ft @ 25 Hz** (internal slot into front), front **20 cu ft @ 60 Hz** (external slot to cabin). **2:1** volume ratio with low rear tuning.
+**Default preset (Series):** dual **18"** wall — rear **10 cu ft @ 25 Hz** (internal slot into front), front **20 cu ft @ 60 Hz** (22 sq in external port, area mode). **2:1** volume ratio with low rear tuning.
 
 ## Features
 

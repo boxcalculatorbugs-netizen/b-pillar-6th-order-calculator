@@ -1,8 +1,8 @@
 /**
- * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front (slot ports).
- * 2:1 volume ratio; rear tuned low; front 60 Hz external slot to cabin.
+ * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front @ 60 Hz.
+ * Rear: internal slot. Front: 22 sq in area port (60 Hz target; large slots cannot tune that high in 20 cu ft).
  */
-export const STARTUP_PRESET_VERSION = 2
+export const STARTUP_PRESET_VERSION = 3
 
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
@@ -30,7 +30,8 @@ export const SERIES_STARTUP_PRESET = {
   fb2: 60,
   vb2Basis: 'net',
   vb2: 20,
-  port2Mode: 'slot',
+  port2Mode: 'area',
+  port2Area: 22,
   port2SlotW: 28,
   port2SlotH: 5,
   port2Wall: 0.75,
@@ -79,6 +80,7 @@ export function applyStartupPreset() {
   set('fb2', p.fb2)
   set('vb2', p.vb2)
   set('port2Mode', p.port2Mode)
+  if (p.port2Area != null) set('port2Area', p.port2Area)
   set('port2SlotW', p.port2SlotW)
   set('port2SlotH', p.port2SlotH)
   set('port2Wall', p.port2Wall)

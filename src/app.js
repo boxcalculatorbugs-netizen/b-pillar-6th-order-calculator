@@ -886,19 +886,28 @@ function updateFbInputLock(chamber) {
   const fb = $(`fb${chamber}`)
   const hint = $(`fb${chamber}LockHint`)
   if (fb) {
-    fb.disabled = locked
+    fb.readOnly = locked
+    fb.disabled = false
     fb.classList.toggle('input-locked', locked)
+    fb.setAttribute('aria-readonly', locked ? 'true' : 'false')
   }
   if (hint) hint.classList.toggle('hidden', !locked)
 }
 
 function syncComputedFbFields(result) {
   ;[1, 2].forEach((ch) => {
-    if (!isLengthAdjustMode($(`port${ch}Mode`).value)) return
+    const mode = $(`port${ch}Mode`).value
+    if (!isLengthAdjustMode(mode)) return
     const chamber = result.chambers[`chamber${ch}`]
     const fb = $(`fb${ch}`)
-    if (fb && chamber?.fbHz > 0) {
+    if (!fb) return
+    if (chamber?.fbHz > 0) {
       fb.value = chamber.fbHz.toFixed(1)
+      return
+    }
+    const target = num(`fb${ch}`)
+    if (target > 0) {
+      fb.value = target.toFixed(1)
     }
   })
 }
