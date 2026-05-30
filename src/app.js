@@ -1462,7 +1462,9 @@ enhanceNumberInputs()
 bindEvents()
 
 const { lsResult } = bootstrapDesignState(state, applyStartupPreset)
-if (lsResult.ok) {
+if (lsResult.presetUpgrade) {
+  setDesignStatus('Updated to new defaults')
+} else if (lsResult.ok) {
   setDesignStatus('Restored auto-save')
 } else if (lsResult.error) {
   setDesignStatus(lsResult.error)
