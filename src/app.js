@@ -1267,53 +1267,8 @@ function initBetaBanner() {
   })
 }
 
-function setupMobileView() {
-  const mq = window.matchMedia('(max-width: 960px)')
-  const nav = document.getElementById('mobileNav')
-  if (!nav) return
-
-  const btnInputs = nav.querySelector('[data-mobile-view="inputs"]')
-  const btnResults = nav.querySelector('[data-mobile-view="results"]')
-
-  function setView(view) {
-    document.body.dataset.mobileView = view
-    btnInputs?.classList.toggle('active', view === 'inputs')
-    btnResults?.classList.toggle('active', view === 'results')
-    if (view === 'results') {
-      document.querySelector('.results-panel')?.scrollIntoView({ block: 'start' })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      requestAnimationFrame(() => {
-        cabinChart?.resize()
-        passbandChart?.resize()
-        sensitivityChart?.resize()
-      })
-    } else {
-      document.querySelector('.inputs-panel')?.scrollIntoView({ block: 'start' })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
-
-  function applyMobileMode(isMobile) {
-    document.body.classList.toggle('mobile-mode', isMobile)
-    if (isMobile) {
-      if (!document.body.dataset.mobileView) setView('inputs')
-    } else {
-      delete document.body.dataset.mobileView
-      btnInputs?.classList.remove('active')
-      btnResults?.classList.remove('active')
-      btnInputs?.classList.add('active')
-    }
-  }
-
-  btnInputs?.addEventListener('click', () => setView('inputs'))
-  btnResults?.addEventListener('click', () => setView('results'))
-
-  applyMobileMode(mq.matches)
-  mq.addEventListener('change', (e) => applyMobileMode(e.matches))
-}
-
 function updateMobileMenuAnchor() {
-  if (!window.matchMedia('(max-width: 960px)').matches) return
+  if (!window.matchMedia('(max-width: 1024px)').matches) return
   const bar = document.querySelector('.menu-bar')
   if (!bar) return
   document.documentElement.style.setProperty('--mobile-menu-top', `${bar.getBoundingClientRect().bottom}px`)
@@ -1500,7 +1455,6 @@ initTheme()
 initDoorTuning()
 initBetaBanner()
 setupMenuBar()
-setupMobileView()
 setupCalcModeMenu()
 setupThemeMenu()
 setupDoorTuningMenu()

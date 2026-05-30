@@ -1,6 +1,6 @@
 /**
  * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front (slot ports).
- * 2:1 volume ratio; rear tuned low; front left for Helmholtz from slot (default 45 Hz).
+ * 2:1 volume ratio; rear tuned low; front 60 Hz external slot to cabin.
  */
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
@@ -25,7 +25,7 @@ export const SERIES_STARTUP_PRESET = {
   port1SlotH: 3.5,
   port1Wall: 0.75,
   port1CommonWalls: 2,
-  fb2: 45,
+  fb2: 60,
   vb2Basis: 'net',
   vb2: 20,
   port2Mode: 'slot',

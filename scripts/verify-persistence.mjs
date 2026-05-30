@@ -16,7 +16,7 @@ const sampleDesign = {
     cabinVolume: '80',
     fb1: '25',
     vb1: '10',
-    fb2: '45',
+    fb2: '60',
     vb2: '20'
   }
 }

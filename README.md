@@ -26,7 +26,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 | **Parallel** | Vents to cabin | Vents to cabin | 0.732×r (flanged) both |
 | **Series** | Vents into front chamber | Vents to cabin | 0.614×r internal, 0.732×r external |
 
-**Default preset (Series):** dual **18"** wall — rear **10 cu ft @ 25 Hz** (internal slot into front), front **20 cu ft @ 45 Hz** (external slot to cabin). **2:1** volume ratio with low rear tuning.
+**Default preset (Series):** dual **18"** wall — rear **10 cu ft @ 25 Hz** (internal slot into front), front **20 cu ft @ 60 Hz** (external slot to cabin). **2:1** volume ratio with low rear tuning.
 
 ## Features
 
@@ -90,7 +90,7 @@ npm run dist         # Windows installer + portable exe
 2. Push to `main` — workflow [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) builds and deploys `dist/web`
 3. For local preview: `npm run build:web` then serve `dist/web`
 
-On phones and narrow browsers (≤960px), the layout switches to **mobile mode**: a bottom **Inputs / Results** bar shows one panel at a time, fields stack in a single column, and touch targets are enlarged.
+On phones and narrow browsers, the app keeps the **same desktop layout** (inputs and results side by side). Pinch to zoom and scroll as needed — same as “Request desktop site” in mobile browsers. Touch targets are enlarged on touch devices.
 
 Output (Electron): `release/B-Pillar 6th Order Calculator Setup 1.0.x.exe` and portable `.exe`.
 
