@@ -12,7 +12,6 @@ import {
 import {
   bootstrapDesignState,
   debouncedAutoSave,
-  copyShareLinkToClipboard,
   clearAutoSave,
   isBetaBannerDismissed,
   dismissBetaBanner,
@@ -1072,22 +1071,6 @@ function closeAllMenus() {
   })
 }
 
-async function handleShareLink() {
-  closeAllMenus()
-  try {
-    const result = await copyShareLinkToClipboard(state)
-    if (result.ok) {
-      setDesignStatus('Share link copied to clipboard')
-    } else if (result.tooLarge) {
-      setDesignStatus(
-        `Design too large for URL (${result.encodedLength} chars) — use Save Design JSON instead`
-      )
-    }
-  } catch {
-    setDesignStatus('Could not copy share link — check browser clipboard permission')
-  }
-}
-
 async function handleSaveDesign() {
   closeAllMenus()
   const data = exportDesign(state)
@@ -1284,6 +1267,58 @@ function initBetaBanner() {
   })
 }
 
+function setupMobileView() {
+  const mq = window.matchMedia('(max-width: 960px)')
+  const nav = document.getElementById('mobileNav')
+  if (!nav) return
+
+  const btnInputs = nav.querySelector('[data-mobile-view="inputs"]')
+  const btnResults = nav.querySelector('[data-mobile-view="results"]')
+
+  function setView(view) {
+    document.body.dataset.mobileView = view
+    btnInputs?.classList.toggle('active', view === 'inputs')
+    btnResults?.classList.toggle('active', view === 'results')
+    if (view === 'results') {
+      document.querySelector('.results-panel')?.scrollIntoView({ block: 'start' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      requestAnimationFrame(() => {
+        cabinChart?.resize()
+        passbandChart?.resize()
+        sensitivityChart?.resize()
+      })
+    } else {
+      document.querySelector('.inputs-panel')?.scrollIntoView({ block: 'start' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  function applyMobileMode(isMobile) {
+    document.body.classList.toggle('mobile-mode', isMobile)
+    if (isMobile) {
+      if (!document.body.dataset.mobileView) setView('inputs')
+    } else {
+      delete document.body.dataset.mobileView
+      btnInputs?.classList.remove('active')
+      btnResults?.classList.remove('active')
+      btnInputs?.classList.add('active')
+    }
+  }
+
+  btnInputs?.addEventListener('click', () => setView('inputs'))
+  btnResults?.addEventListener('click', () => setView('results'))
+
+  applyMobileMode(mq.matches)
+  mq.addEventListener('change', (e) => applyMobileMode(e.matches))
+}
+
+function updateMobileMenuAnchor() {
+  if (!window.matchMedia('(max-width: 960px)').matches) return
+  const bar = document.querySelector('.menu-bar')
+  if (!bar) return
+  document.documentElement.style.setProperty('--mobile-menu-top', `${bar.getBoundingClientRect().bottom}px`)
+}
+
 function setupMenuBar() {
   document.querySelectorAll('.menu-item').forEach((item) => {
     const trigger = item.querySelector('.menu-trigger')
@@ -1293,6 +1328,7 @@ function setupMenuBar() {
       const wasOpen = item.classList.contains('open')
       closeAllMenus()
       if (!wasOpen && dropdown) {
+        updateMobileMenuAnchor()
         item.classList.add('open')
         dropdown.hidden = false
       }
@@ -1308,10 +1344,6 @@ function setupMenuBar() {
   $('menuLoadDesign')?.addEventListener('click', (e) => {
     e.stopPropagation()
     handleLoadDesign()
-  })
-  $('menuCopyShareLink')?.addEventListener('click', (e) => {
-    e.stopPropagation()
-    handleShareLink()
   })
   $('menuClearDesign')?.addEventListener('click', (e) => {
     e.stopPropagation()
@@ -1468,18 +1500,15 @@ initTheme()
 initDoorTuning()
 initBetaBanner()
 setupMenuBar()
+setupMobileView()
 setupCalcModeMenu()
 setupThemeMenu()
 setupDoorTuningMenu()
 enhanceNumberInputs()
 bindEvents()
 
-const { urlResult, lsResult } = bootstrapDesignState(state, applyStartupPreset)
-if (urlResult.ok) {
-  setDesignStatus('Loaded from share link')
-} else if (urlResult.error) {
-  setDesignStatus(urlResult.error)
-} else if (lsResult.ok) {
+const { lsResult } = bootstrapDesignState(state, applyStartupPreset)
+if (lsResult.ok) {
   setDesignStatus('Restored auto-save')
 } else if (lsResult.error) {
   setDesignStatus(lsResult.error)

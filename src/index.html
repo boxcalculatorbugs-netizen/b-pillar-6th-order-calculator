@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1a2332" />
     <title>B-Pillar 6th Order Calculator</title>
     <link rel="icon" type="image/png" href="./assets/icon.png" />
     <link rel="stylesheet" href="./styles/main.css" />
@@ -23,7 +26,6 @@
           <div class="menu-dropdown" id="menuFile" hidden>
             <button type="button" class="menu-action" id="menuSaveDesign">Save Design…</button>
             <button type="button" class="menu-action" id="menuLoadDesign">Load Design…</button>
-            <button type="button" class="menu-action" id="menuCopyShareLink">Copy Share Link</button>
           </div>
         </div>
         <div class="menu-item">
@@ -166,17 +168,17 @@
           <div class="field-grid">
             <label>
               Max depth (B-pillar to rear)
-              <input type="number" id="maxDepth" value="26" min="0" step="0.1" />
+              <input type="number" id="maxDepth" value="32" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
               Max height
-              <input type="number" id="maxHeight" value="15" min="0" step="0.1" />
+              <input type="number" id="maxHeight" value="16" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
               Max width
-              <input type="number" id="maxWidth" value="54" min="0" step="0.1" />
+              <input type="number" id="maxWidth" value="58" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
           </div>
@@ -284,7 +286,7 @@
         <details open class="input-section">
           <summary id="chamber1Summary">Chamber 1 — Rear / Internal Port → Front</summary>
           <div class="field-grid">
-            <label class="ch1-port-field">Fb1 (Hz) <input type="number" id="fb1" value="32" min="0" step="0.1" /><span id="fb1LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label class="ch1-port-field">Fb1 (Hz) <input type="number" id="fb1" value="25" min="0" step="0.1" /><span id="fb1LockHint" class="fb-lock-hint hidden">computed from port</span></label>
             <label>
               Volume basis
               <select id="vb1Basis">
@@ -295,7 +297,7 @@
             </label>
             <label id="vb1NetLabel">
               <span id="vb1NetTitle">Net volume</span>
-              <input type="number" id="vb1" value="3.25" min="0" step="0.01" />
+              <input type="number" id="vb1" value="10" min="0" step="0.01" />
               <span class="unit-label volume-unit">cu ft</span>
               <span id="vb1PerSub" class="field-hint hidden"></span>
             </label>
@@ -357,12 +359,12 @@
             </label>
             <label id="port1SlotWLabel" class="hidden ch1-port-field">
               Slot width (outer)
-              <input type="number" id="port1SlotW" value="14" min="0" step="0.1" />
+              <input type="number" id="port1SlotW" value="18" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port1SlotHLabel" class="hidden ch1-port-field">
               Slot height (outer)
-              <input type="number" id="port1SlotH" value="2.5" min="0" step="0.1" />
+              <input type="number" id="port1SlotH" value="3.5" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port1WallLabel" class="hidden ch1-port-field">
@@ -382,7 +384,7 @@
         <details open class="input-section" id="chamber2Section">
           <summary id="chamber2Summary">Chamber 2 — Front / External Port → Cabin</summary>
           <div class="field-grid">
-            <label id="fb2Label"><span id="fb2LabelText">Fb2 (Hz)</span> <input type="number" id="fb2" value="48" min="0" step="0.1" /><span id="fb2LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label id="fb2Label"><span id="fb2LabelText">Fb2 (Hz)</span> <input type="number" id="fb2" value="45" min="0" step="0.1" /><span id="fb2LockHint" class="fb-lock-hint hidden">computed from port</span></label>
             <label>
               Volume basis
               <select id="vb2Basis">
@@ -393,7 +395,7 @@
             </label>
             <label id="vb2NetLabel">
               <span id="vb2NetTitle">Net volume</span>
-              <input type="number" id="vb2" value="5.75" min="0" step="0.01" />
+              <input type="number" id="vb2" value="20" min="0" step="0.01" />
               <span class="unit-label volume-unit">cu ft</span>
               <span id="vb2PerSub" class="field-hint hidden"></span>
             </label>
@@ -455,12 +457,12 @@
             </label>
             <label id="port2SlotWLabel" class="hidden">
               Slot width (outer)
-              <input type="number" id="port2SlotW" value="22" min="0" step="0.1" />
+              <input type="number" id="port2SlotW" value="28" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port2SlotHLabel" class="hidden">
               Slot height (outer)
-              <input type="number" id="port2SlotH" value="4" min="0" step="0.1" />
+              <input type="number" id="port2SlotH" value="5" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port2WallLabel" class="hidden">
@@ -550,6 +552,11 @@
       </section>
     </main>
 
+    <nav class="mobile-nav" id="mobileNav" aria-label="Section navigation">
+      <button type="button" class="mobile-nav-btn active" data-mobile-view="inputs">Inputs</button>
+      <button type="button" class="mobile-nav-btn" data-mobile-view="results">Results</button>
+    </nav>
+
     <dialog id="helpDialog" class="help-dialog">
       <div class="help-dialog-inner">
         <header class="help-dialog-header">
@@ -583,8 +590,7 @@
             <ul>
               <li><strong>Save Design</strong> — writes every input and unit setting to a <code>.json</code> file.</li>
               <li><strong>Load Design</strong> — restores a saved <code>.json</code> design file.</li>
-              <li><strong>Copy Share Link</strong> — copies a URL with your design encoded in <code>?state=</code> (share link takes priority over auto-save on load).</li>
-              <li><strong>Auto-save</strong> — inputs are saved to browser storage automatically; refresh restores your last session unless a share link is opened.</li>
+              <li><strong>Auto-save</strong> — inputs are saved to browser storage automatically; refresh restores your last session.</li>
               <li><strong>Load Design</strong> — restores a saved file.</li>
               <li><strong>Clear Design</strong> — clears all numeric inputs, clears optional T/S fields, unchecks toggles, and resets units to cu ft / in / sq in.</li>
               <li><strong>Port length model</strong> (Edit menu) — choose Helmholtz (default), Quarter Wave, or All Considered Theory (experimental MLTL). Affects calculated port length in area mode and default length in diameter/slot modes.</li>

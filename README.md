@@ -10,13 +10,12 @@ Desktop Electron app and **GitHub Pages web build** for designing **6th-order ba
 
 Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/engine.js) orchestrates Helmholtz, quarter-wave, MLTL, cabin gain, 4th-order Fcb, door tuning, packaging, and warnings. Public entry: [`src/calc/index.js`](src/calc/index.js) (`runAll`).
 
-## State management (3-tier)
+## State management
 
 | Priority | Feature | How |
 |----------|---------|-----|
-| 1 | **Share URL** | File → Copy Share Link (`?state=…` base64url). URL wins on load over auto-save. |
-| 2 | **Auto-save** | Debounced `localStorage` on every input change |
-| 3 | **Defaults** | Startup preset when no URL or auto-save |
+| 1 | **Auto-save** | Debounced `localStorage` on every input change |
+| 2 | **Defaults** | Startup preset when no auto-save |
 
 **Save Design / Load Design** exports or imports a `.json` file (same schema as auto-save).
 
@@ -27,7 +26,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 | **Parallel** | Vents to cabin | Vents to cabin | 0.732×r (flanged) both |
 | **Series** | Vents into front chamber | Vents to cabin | 0.614×r internal, 0.732×r external |
 
-**Default preset (Series):** dual **18"** wall — rear **3.25 cu ft @ 32 Hz** (internal slot into front), front **5.75 cu ft @ 48 Hz** (external slot to cabin). ~**1.77:1** volume ratio and **~0.58 oct** tuning spread — a realistic street/SPL starting point, not a textbook 30/60 Hz octave demo.
+**Default preset (Series):** dual **18"** wall — rear **10 cu ft @ 25 Hz** (internal slot into front), front **20 cu ft @ 45 Hz** (external slot to cabin). **2:1** volume ratio with low rear tuning.
 
 ## Features
 
@@ -71,7 +70,6 @@ Volume: **cu ft**, **cu in**, or **liters**. Length: inches or mm. Port area: sq
 |------|--------|
 | **File → Save Design** | Save all inputs to a `.json` file |
 | **File → Load Design** | Restore a saved design |
-| **File → Copy Share Link** | Copy URL with encoded design state |
 | **Edit → Clear Design** | Zero all inputs and clear optional fields |
 | **Help → Software Manual** | Full metrics reference |
 | **Help → Show Beta Disclaimer** | Re-show the beta warning banner |
@@ -91,6 +89,8 @@ npm run dist         # Windows installer + portable exe
 1. Enable **GitHub Pages** → Source: **GitHub Actions**
 2. Push to `main` — workflow [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) builds and deploys `dist/web`
 3. For local preview: `npm run build:web` then serve `dist/web`
+
+On phones and narrow browsers (≤960px), the layout switches to **mobile mode**: a bottom **Inputs / Results** bar shows one panel at a time, fields stack in a single column, and touch targets are enlarged.
 
 Output (Electron): `release/B-Pillar 6th Order Calculator Setup 1.0.x.exe` and portable `.exe`.
 

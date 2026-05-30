@@ -1,16 +1,15 @@
 /**
- * Realistic series 6th-order wall example — dual 18", slot ports, musical/SPL-friendly spread.
- * Rear ~3.25 cu ft @ 32 Hz (internal slot into front); front ~5.75 cu ft @ 48 Hz (external slot to cabin).
- * Volume ratio ~1.77:1; tuning spread ~0.58 oct (not a textbook 2:1 octave) — typical street build starting point.
+ * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front (slot ports).
+ * 2:1 volume ratio; rear tuned low; front left for Helmholtz from slot (default 45 Hz).
  */
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
   cabinLength: 115,
   cabinVolume: 75,
   doorsOpen: false,
-  maxDepth: 26,
-  maxHeight: 15,
-  maxWidth: 54,
+  maxDepth: 32,
+  maxHeight: 16,
+  maxWidth: 58,
   wallThickness: 1.5,
   bracingPercent: 12,
   bracingEnabled: true,
@@ -18,20 +17,20 @@ export const SERIES_STARTUP_PRESET = {
   toleranceEnabled: true,
   driverSize: 18,
   driverCount: 2,
-  fb1: 32,
+  fb1: 25,
   vb1Basis: 'net',
-  vb1: 3.25,
+  vb1: 10,
   port1Mode: 'slot',
-  port1SlotW: 14,
-  port1SlotH: 2.75,
+  port1SlotW: 18,
+  port1SlotH: 3.5,
   port1Wall: 0.75,
   port1CommonWalls: 2,
-  fb2: 48,
+  fb2: 45,
   vb2Basis: 'net',
-  vb2: 5.75,
+  vb2: 20,
   port2Mode: 'slot',
-  port2SlotW: 22,
-  port2SlotH: 4,
+  port2SlotW: 28,
+  port2SlotH: 5,
   port2Wall: 0.75,
   port2CommonWalls: 0,
   tsFs: 32,
