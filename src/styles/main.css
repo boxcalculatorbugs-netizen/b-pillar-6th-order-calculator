@@ -153,6 +153,11 @@ body {
   flex: 1;
 }
 
+.beta-banner-text a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .beta-banner-dismiss {
   flex-shrink: 0;
   background: transparent;
