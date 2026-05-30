@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 48" role="img" aria-label="6th order bandpass side view">
+  <defs>
+    <linearGradient id="rearCh" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="frontCh" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <!-- B-pillar wall -->
+  <rect x="3" y="7" width="54" height="34" rx="4" fill="#1a2332" stroke="#64748b" stroke-width="1.5"/>
+  <!-- Rear chamber -->
+  <rect x="6" y="10" width="20" height="28" rx="2.5" fill="url(#rearCh)" stroke="#60a5fa" stroke-width="1"/>
+  <!-- Front chamber -->
+  <rect x="30" y="10" width="24" height="28" rx="2.5" fill="url(#frontCh)" stroke="#34d399" stroke-width="1"/>
+  <!-- Divider -->
+  <line x1="28" y1="9" x2="28" y2="39" stroke="#cbd5e1" stroke-width="1.75"/>
+  <!-- Driver -->
+  <rect x="22" y="17" width="12" height="14" rx="2" fill="#334155" stroke="#e2e8f0" stroke-width="1"/>
+  <circle cx="28" cy="24" r="4.5" fill="#0f172a" stroke="#e2e8f0" stroke-width="1"/>
+  <!-- P1 internal (rear ? front) -->
+  <rect x="30" y="29" width="16" height="5" rx="1.5" fill="#60a5fa" opacity="0.9"/>
+  <path d="M26 24 H30" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/>
+  <!-- P2 external (front ? cabin) -->
+  <rect x="52" y="13" width="5" height="14" rx="1.5" fill="#34d399" opacity="0.9"/>
+  <path d="M57 20 H62" stroke="#34d399" stroke-width="2" stroke-linecap="round"/>
+  <!-- Cabin zone -->
+  <rect x="62" y="9" width="15" height="30" rx="3" fill="rgba(148,163,184,0.08)" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="69.5" y="26" text-anchor="middle" fill="#64748b" font-size="5" font-family="Segoe UI, system-ui, sans-serif" opacity="0.7">CAB</text>
+</svg>

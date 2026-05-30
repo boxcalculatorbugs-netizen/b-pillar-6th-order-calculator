@@ -1,0 +1,75 @@
+{
+  "name": "b-pillar-6th-order-calculator",
+  "version": "1.0.28",
+  "description": "B-Pillar Wall 6th-Order Bandpass Calculator with cabin gain and T/S modeling",
+  "main": "out/main/index.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "icons": "node scripts/generate-icons.mjs",
+    "dev": "npm run icons && electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "npm run build && npm run icons && electron-builder",
+    "verify": "node scripts/verify-calc.mjs && node scripts/verify-persistence.mjs",
+    "build:web": "vite build --config vite.web.config.js"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.8"
+  },
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.0.0",
+    "playwright": "^1.49.1",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.5",
+    "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.bpillar.sixthorder.calculator",
+    "productName": "B-Pillar 6th Order Calculator",
+    "icon": "build/icon.ico",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "B-Pillar 6th Order Calculator"
+    }
+  }
+}

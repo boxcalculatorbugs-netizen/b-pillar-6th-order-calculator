@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>B-Pillar 6th Order Calculator</title>
+    <link rel="icon" type="image/png" href="./assets/icon.png" />
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <div id="betaBanner" class="beta-banner" role="alert" hidden>
+      <div class="beta-banner-inner">
+        <strong class="beta-banner-label">WARNING: BETA VERSION.</strong>
+        <span class="beta-banner-text">This is an experimental acoustic calculator for extreme SPL applications. The creator (Anthony Albers) is NOT responsible for wasted MDF, blown subwoofers, blown amplifiers, structural vehicle damage, or hearing loss. Always measure twice and use common sense. Use at your own risk.</span>
+        <button type="button" id="betaBannerDismiss" class="beta-banner-dismiss" aria-label="Dismiss beta warning">×</button>
+      </div>
+    </div>
+
+    <nav class="menu-bar" aria-label="Application menu">
+      <div class="menu-group">
+        <div class="menu-item">
+          <button type="button" class="menu-trigger" data-menu="file">File</button>
+          <div class="menu-dropdown" id="menuFile" hidden>
+            <button type="button" class="menu-action" id="menuSaveDesign">Save Design…</button>
+            <button type="button" class="menu-action" id="menuLoadDesign">Load Design…</button>
+            <button type="button" class="menu-action" id="menuCopyShareLink">Copy Share Link</button>
+          </div>
+        </div>
+        <div class="menu-item">
+          <button type="button" class="menu-trigger" data-menu="edit">Edit</button>
+          <div class="menu-dropdown" id="menuEdit" hidden>
+            <button type="button" class="menu-action" id="menuClearDesign">Clear Design</button>
+            <div class="menu-divider" role="separator"></div>
+            <div class="menu-heading">Port length model</div>
+            <button type="button" class="menu-action menu-radio" data-calc-mode="helmholtz" role="menuitemradio" aria-checked="true">
+              <span class="menu-check" aria-hidden="true">✓</span> Helmholtz
+            </button>
+            <button type="button" class="menu-action menu-radio" data-calc-mode="quarter_wave" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Quarter Wave
+            </button>
+            <button type="button" class="menu-action menu-radio" data-calc-mode="all_considered" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> All Considered Theory (Experimental MLTL)
+            </button>
+            <div class="menu-divider" role="separator"></div>
+            <div class="menu-heading">Color theme</div>
+            <button type="button" class="menu-action menu-radio" data-theme="midnight" role="menuitemradio" aria-checked="true">
+              <span class="menu-check" aria-hidden="true">✓</span> Midnight (default)
+            </button>
+            <button type="button" class="menu-action menu-radio" data-theme="carbon" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Carbon
+            </button>
+            <button type="button" class="menu-action menu-radio" data-theme="ocean" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Ocean
+            </button>
+            <button type="button" class="menu-action menu-radio" data-theme="forest" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Forest
+            </button>
+            <button type="button" class="menu-action menu-radio" data-theme="slate" role="menuitemradio" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Slate Light
+            </button>
+            <div class="menu-divider" role="separator"></div>
+            <div class="menu-heading">Experimental</div>
+            <button type="button" class="menu-action menu-radio" id="menuDoorTuningToggle" data-door-tuning-toggle role="menuitemcheckbox" aria-checked="false">
+              <span class="menu-check" aria-hidden="true">✓</span> Door tuning (Helmholtz)
+            </button>
+          </div>
+        </div>
+        <div class="menu-item">
+          <button type="button" class="menu-trigger" data-menu="help">Help</button>
+          <div class="menu-dropdown" id="menuHelp" hidden>
+            <button type="button" class="menu-action" id="menuShowHelp">Software Manual</button>
+            <button type="button" class="menu-action" id="menuShowBetaDisclaimer">Show Beta Disclaimer</button>
+          </div>
+        </div>
+      </div>
+      <span class="menu-status" id="designStatus"></span>
+    </nav>
+
+    <header class="app-header">
+      <div class="app-brand">
+        <img src="./assets/logo-sixth-order.svg" alt="" class="app-logo" width="56" height="34" />
+        <div>
+          <h1>B-Pillar 6th Order Calculator</h1>
+          <p class="subtitle" id="appSubtitle">Series 6th Order Bandpass — Low Frequency Wall Design</p>
+          <p class="app-credit">Created by Anthony Albers</p>
+        </div>
+      </div>
+      <div class="unit-toggle">
+        <label>Order type</label>
+        <select id="orderType">
+          <option value="parallel">Parallel 6th</option>
+          <option value="series" selected>Series 6th</option>
+          <option value="ported">Ported</option>
+          <option value="fourth">4th-Order Bandpass</option>
+        </select>
+        <label>Volume</label>
+        <select id="volumeUnit">
+          <option value="cuft">cu ft</option>
+          <option value="cuin">cu in</option>
+          <option value="liters">liters</option>
+        </select>
+        <label>Length</label>
+        <select id="lengthUnit">
+          <option value="in">inches</option>
+          <option value="mm">mm</option>
+        </select>
+        <label>Port area</label>
+        <select id="areaUnit">
+          <option value="sqin">sq in</option>
+          <option value="sqcm">cm²</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="app-layout">
+      <section class="panel inputs-panel">
+        <details open class="input-section">
+          <summary>Vehicle / Cabin</summary>
+          <div class="field-grid">
+            <label>
+              Longest cabin dimension
+              <input type="number" id="cabinLength" value="120" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label>
+              Cabin volume
+              <input type="number" id="cabinVolume" value="80" min="0" step="0.1" />
+              <span class="unit-label volume-unit">cu ft</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="doorsOpen" />
+              Doors open (reduced cabin loading)
+            </label>
+          </div>
+          <div id="doorTuningFields" class="field-grid door-tuning-fields hidden">
+            <label>
+              Door opening width
+              <input type="number" id="doorWidth" value="24" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label>
+              Door opening height
+              <input type="number" id="doorHeight" value="36" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label>
+              Jamb / throat thickness
+              <input type="number" id="doorJambThickness" value="4" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label class="toggle-row door-tuning-leakage-row">
+              <input type="checkbox" id="cabinSealed" />
+              Perfectly Sealed Passenger Cabin (Armored/Deadened)
+            </label>
+            <label id="cabinLeakageAreaLabel">
+              Estimated leakage area
+              <input type="number" id="cabinLeakageArea" value="15" min="0" step="0.5" />
+              <span class="unit-label area-unit">sq in</span>
+            </label>
+          </div>
+          <p id="doorTuningHint" class="field-hint hidden">Experimental door-jamb tuning with cabin leakage. Unsealed cabins lose closed-door loading (~0.2 dB/oct per sq in leak, floor 3 dB/oct). Leak area also adds parasitic vent area to F_door when not perfectly sealed.</p>
+        </details>
+
+        <details open class="input-section">
+          <summary>B-Pillar Space</summary>
+          <div class="field-grid">
+            <label>
+              Max depth (B-pillar to rear)
+              <input type="number" id="maxDepth" value="18" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label>
+              Max height
+              <input type="number" id="maxHeight" value="14" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label>
+              Max width
+              <input type="number" id="maxWidth" value="52" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+          </div>
+        </details>
+
+        <details open class="input-section">
+          <summary>Build Adjustments</summary>
+          <div class="field-grid">
+            <label>
+              Wall thickness
+              <input type="number" id="wallThickness" value="1.5" min="0" step="0.125" />
+              <span class="unit-label length-unit">in</span>
+              <span class="field-hint">2 × 3/4" MDF default — subtracted from outer L×W×H when measuring from outside the box</span>
+            </label>
+          </div>
+          <div class="build-option">
+            <label class="toggle-row">
+              <input type="checkbox" id="bracingEnabled" checked />
+              Include bracing allowance
+            </label>
+            <p class="field-hint build-hint">
+              Reserves extra internal volume for window braces, dowels, amp niches, and structural ribs.
+              Typical car-audio walls use 10–20% of each chamber's net volume. Set to 0% if you already
+              accounted for bracing in your gross measurements.
+            </p>
+            <label class="build-slider-row">
+              Bracing allowance
+              <span class="slider-row">
+                <input type="range" id="bracingPercent" min="0" max="25" step="1" value="15" />
+                <span id="bracingPercentLabel">15%</span>
+              </span>
+            </label>
+          </div>
+          <div class="build-option">
+            <label class="toggle-row">
+              <input type="checkbox" id="toleranceEnabled" checked />
+              Enable tolerance sweep
+            </label>
+            <p class="field-hint build-hint">
+              Models what happens if your built box is slightly off — e.g. chamber volume ±5–10% from
+              plan. Shows Fb drift and how much port length would need to change to hold tuning.
+              See the <strong>Tuning Sensitivity</strong> chart tab when enabled.
+            </p>
+            <label class="build-slider-row">
+              Sweep range
+              <span class="slider-row">
+                <input type="range" id="tolerancePercent" min="5" max="20" step="1" value="10" />
+                <span id="tolerancePercentLabel">±10%</span>
+              </span>
+            </label>
+          </div>
+        </details>
+
+        <details open class="input-section">
+          <summary>Driver Array</summary>
+          <div class="field-grid">
+            <label>
+              Subwoofer size
+              <input type="number" id="driverSize" value="15" min="0" step="0.5" list="driverSizeList" />
+              <span class="unit-label length-unit">in</span>
+              <datalist id="driverSizeList">
+                <option value="8"></option>
+                <option value="10"></option>
+                <option value="12"></option>
+                <option value="15"></option>
+                <option value="18"></option>
+                <option value="21"></option>
+                <option value="24"></option>
+              </datalist>
+            </label>
+            <label>
+              Number of drivers
+              <input type="number" id="driverCount" value="2" min="0" step="1" />
+            </label>
+          </div>
+          <div id="driverSdInfo" class="suitability-box neutral">Set driver size and count to estimate total cone area (Sd).</div>
+        </details>
+
+        <details class="input-section" id="tsSection">
+          <summary>Driver T/S Parameters (optional)</summary>
+          <div class="field-grid ts-grid">
+            <label>Fs (Hz) <input type="number" id="tsFs" step="0.1" placeholder="28" /></label>
+            <label>Qts <input type="number" id="tsQts" step="0.001" placeholder="0.40" /></label>
+            <label>Qes <input type="number" id="tsQes" step="0.001" placeholder="0.45" /></label>
+            <label>
+              Vas
+              <input type="number" id="tsVas" step="0.01" placeholder="2.5" />
+              <select id="tsVasUnit"><option value="cuft">cu ft</option><option value="liters">L</option></select>
+            </label>
+            <label>
+              Sd
+              <input type="number" id="tsSd" step="0.1" placeholder="53" />
+              <select id="tsSdUnit"><option value="sqin">sq in</option><option value="sqcm">cm²</option></select>
+            </label>
+            <label>Re (Ω) <input type="number" id="tsRe" step="0.01" placeholder="3.6" /></label>
+            <label>Xmax (mm) <input type="number" id="tsXmax" step="0.1" placeholder="16" /></label>
+            <label>Pe (W) <input type="number" id="tsPe" step="1" placeholder="800" /></label>
+            <label>Vd (cu in) <input type="number" id="tsVd" step="0.1" placeholder="optional" /></label>
+          </div>
+          <button type="button" id="applyTsBtn" class="btn secondary">Apply T/S Suggestions</button>
+          <p id="tsFourthHint" class="field-hint hidden">Fs, Vas, and Qts are required for Fcb and compatibility checks. Low Fcb needs <strong>low Fs</strong>, <strong>low Cms</strong> (stiff/low Vas), <strong>Qts ~0.29–0.30</strong>, and enough sealed Vr so Fcb ≤ F2.</p>
+          <div id="tsSuitability" class="suitability-box neutral">Enter T/S parameters for suitability analysis.</div>
+        </details>
+
+        <details open class="input-section">
+          <summary id="chamber1Summary">Chamber 1 — Rear / Internal Port → Front</summary>
+          <div class="field-grid">
+            <label class="ch1-port-field">Fb1 (Hz) <input type="number" id="fb1" value="30" min="0" step="0.1" /><span id="fb1LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label>
+              Volume basis
+              <select id="vb1Basis">
+                <option value="net" selected>Net volume</option>
+                <option value="grossDims">Gross L × W × H</option>
+                <option value="grossVolume">Gross volume</option>
+              </select>
+            </label>
+            <label id="vb1NetLabel">
+              <span id="vb1NetTitle">Net volume</span>
+              <input type="number" id="vb1" value="2.0" min="0" step="0.01" />
+              <span class="unit-label volume-unit">cu ft</span>
+              <span id="vb1PerSub" class="field-hint hidden"></span>
+            </label>
+            <label id="vb1GrossVolLabel" class="hidden">
+              Gross volume
+              <input type="number" id="vb1Gross" value="2.5" min="0" step="0.01" />
+              <span class="unit-label volume-unit">cu ft</span>
+            </label>
+            <label id="vb1LenLabel" class="hidden">
+              Length
+              <input type="number" id="vb1Len" value="20" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb1WidthLabel" class="hidden">
+              Width
+              <input type="number" id="vb1Width" value="14" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb1HeightLabel" class="hidden">
+              Height
+              <input type="number" id="vb1Height" value="12" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb1OuterLabel" class="hidden toggle-row">
+              <input type="checkbox" id="vb1Outer" checked />
+              Measure from outer dims (subtract wall thickness)
+            </label>
+            <label>
+              Extra displacement
+              <input type="number" id="vb1Extra" value="0" min="0" step="1" />
+              <span class="unit-label">cu in</span>
+            </label>
+            <label class="ch1-port-field">
+              Port input
+              <select id="port1Mode">
+                <option value="area">Area (sq in)</option>
+                <option value="diameter">Diameter (in)</option>
+                <option value="slot">Slot (W × H × L)</option>
+              </select>
+            </label>
+            <label id="port1CommonWallsLabel" class="hidden ch1-port-field">
+              Common walls shared
+              <select id="port1CommonWalls">
+                <option value="0">0 — free / flush external</option>
+                <option value="1">1 — e.g. floor</option>
+                <option value="2" selected>2 — e.g. floor + side</option>
+                <option value="3">3 — e.g. corner + back</option>
+              </select>
+            </label>
+            <label id="port1AreaLabel" class="ch1-port-field">
+              Port area
+              <input type="number" id="port1Area" value="22" min="0" step="0.1" />
+              <span class="unit-label area-unit">sq in</span>
+            </label>
+            <label id="port1DiamLabel" class="hidden ch1-port-field">
+              Port diameter
+              <input type="number" id="port1Diam" value="5.5" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port1SlotWLabel" class="hidden ch1-port-field">
+              Slot width (outer)
+              <input type="number" id="port1SlotW" value="11" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port1SlotHLabel" class="hidden ch1-port-field">
+              Slot height (outer)
+              <input type="number" id="port1SlotH" value="2.5" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port1WallLabel" class="hidden ch1-port-field">
+              Port wall thickness
+              <input type="number" id="port1Wall" value="0.75" min="0" step="0.125" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port1LengthLabel" class="hidden ch1-port-field">
+              Port length (L)
+              <input type="number" id="port1Length" value="" min="0" step="0.1" placeholder="Helmholtz if blank" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <p id="port1SlotCalc" class="field-hint port-area-calc hidden ch1-port-field">Inner opening: — × — in (— sq in)</p>
+          </div>
+        </details>
+
+        <details open class="input-section" id="chamber2Section">
+          <summary id="chamber2Summary">Chamber 2 — Front / External Port → Cabin</summary>
+          <div class="field-grid">
+            <label id="fb2Label"><span id="fb2LabelText">Fb2 (Hz)</span> <input type="number" id="fb2" value="60" min="0" step="0.1" /><span id="fb2LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label>
+              Volume basis
+              <select id="vb2Basis">
+                <option value="net" selected>Net volume</option>
+                <option value="grossDims">Gross L × W × H</option>
+                <option value="grossVolume">Gross volume</option>
+              </select>
+            </label>
+            <label id="vb2NetLabel">
+              <span id="vb2NetTitle">Net volume</span>
+              <input type="number" id="vb2" value="4.0" min="0" step="0.01" />
+              <span class="unit-label volume-unit">cu ft</span>
+              <span id="vb2PerSub" class="field-hint hidden"></span>
+            </label>
+            <label id="vb2GrossVolLabel" class="hidden">
+              Gross volume
+              <input type="number" id="vb2Gross" value="5.0" min="0" step="0.01" />
+              <span class="unit-label volume-unit">cu ft</span>
+            </label>
+            <label id="vb2LenLabel" class="hidden">
+              Length
+              <input type="number" id="vb2Len" value="24" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb2WidthLabel" class="hidden">
+              Width
+              <input type="number" id="vb2Width" value="16" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb2HeightLabel" class="hidden">
+              Height
+              <input type="number" id="vb2Height" value="14" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="vb2OuterLabel" class="hidden toggle-row">
+              <input type="checkbox" id="vb2Outer" checked />
+              Measure from outer dims (subtract wall thickness)
+            </label>
+            <label>
+              Extra displacement
+              <input type="number" id="vb2Extra" value="0" min="0" step="1" />
+              <span class="unit-label">cu in</span>
+            </label>
+            <label>
+              Port input
+              <select id="port2Mode">
+                <option value="area">Area (sq in)</option>
+                <option value="diameter">Diameter (in)</option>
+                <option value="slot">Slot (W × H × L)</option>
+              </select>
+            </label>
+            <label id="port2CommonWallsLabel" class="hidden">
+              Common walls shared
+              <select id="port2CommonWalls">
+                <option value="0" selected>0 — free / flush external</option>
+                <option value="1">1 — e.g. floor</option>
+                <option value="2">2 — e.g. floor + side</option>
+                <option value="3">3 — e.g. corner + back</option>
+              </select>
+            </label>
+            <label id="port2AreaLabel">
+              Port area
+              <input type="number" id="port2Area" value="30" min="0" step="0.1" />
+              <span class="unit-label area-unit">sq in</span>
+            </label>
+            <label id="port2DiamLabel" class="hidden">
+              Port diameter
+              <input type="number" id="port2Diam" value="6.2" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port2SlotWLabel" class="hidden">
+              Slot width (outer)
+              <input type="number" id="port2SlotW" value="12" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port2SlotHLabel" class="hidden">
+              Slot height (outer)
+              <input type="number" id="port2SlotH" value="3" min="0" step="0.1" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port2WallLabel" class="hidden">
+              Port wall thickness
+              <input type="number" id="port2Wall" value="0.75" min="0" step="0.125" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <label id="port2LengthLabel" class="hidden">
+              Port length (L)
+              <input type="number" id="port2Length" value="" min="0" step="0.1" placeholder="Helmholtz if blank" />
+              <span class="unit-label length-unit">in</span>
+            </label>
+            <p id="port2SlotCalc" class="field-hint port-area-calc hidden">Inner opening: — × — in (— sq in)</p>
+          </div>
+        </details>
+
+        <p class="disclaimer">
+          Response curves and T/S suggestions are design estimates — verify with WinISD or Hornresp before building.
+        </p>
+      </section>
+
+      <section class="panel results-panel">
+        <h2>Results</h2>
+        <div id="summaryCards" class="summary-cards"></div>
+
+        <div class="results-grid">
+          <div class="result-block">
+            <h3 id="chamber1ResultTitle">Chamber 1 (Internal → Front)</h3>
+            <div id="chamber1Results"></div>
+          </div>
+          <div class="result-block" id="chamber2ResultBlock">
+            <h3 id="chamber2ResultTitle">Chamber 2 (External → Cabin)</h3>
+            <div id="chamber2Results"></div>
+          </div>
+          <div class="result-block hidden" id="chamber3ResultBlock">
+            <h3 id="chamber3ResultTitle">Chamber 3 — Cabin (Door Port)</h3>
+            <div id="chamber3Results"></div>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <h3>Volume Breakdown</h3>
+          <div id="volumeBreakdown"></div>
+        </div>
+
+        <div class="result-block hidden" id="fourthOrderBlock">
+          <h3>4th-Order Sealed-Rear Analysis</h3>
+          <div id="fourthOrderAnalysis"></div>
+        </div>
+
+        <div class="result-block">
+          <h3>Bandwidth &amp; Passband Analysis</h3>
+          <div id="bandwidthResults"></div>
+        </div>
+
+        <div class="result-block">
+          <h3>Cabin &amp; Packaging</h3>
+          <div id="cabinResults"></div>
+        </div>
+
+        <div class="result-block">
+          <h3>Warnings</h3>
+          <ul id="warningsList" class="warnings-list"></ul>
+        </div>
+
+        <div class="graphics-section">
+          <div class="tab-bar">
+            <button type="button" class="tab active" data-tab="diagram">Box Diagram</button>
+            <button type="button" class="tab" data-tab="cabin">Cabin Gain</button>
+            <button type="button" class="tab" data-tab="passband">Passband Estimate</button>
+            <button type="button" class="tab" data-tab="sensitivity">Tuning Sensitivity</button>
+          </div>
+          <div id="tabDiagram" class="tab-panel active">
+            <div id="diagramContainer" class="diagram-container"></div>
+          </div>
+          <div id="tabCabin" class="tab-panel">
+            <canvas id="cabinChart"></canvas>
+          </div>
+          <div id="tabPassband" class="tab-panel">
+            <canvas id="passbandChart"></canvas>
+          </div>
+          <div id="tabSensitivity" class="tab-panel">
+            <div id="sensitivityCallouts" class="sensitivity-callouts"></div>
+            <canvas id="sensitivityChart"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="helpDialog" class="help-dialog">
+      <div class="help-dialog-inner">
+        <header class="help-dialog-header">
+          <h2>Software Manual</h2>
+          <button type="button" class="help-close" id="helpCloseBtn" aria-label="Close">×</button>
+        </header>
+        <div class="help-dialog-body">
+          <nav class="help-toc">
+            <strong>Contents</strong>
+            <a href="#man-overview">Overview</a>
+            <a href="#man-menus">File / Edit / Help</a>
+            <a href="#man-order">Order types</a>
+            <a href="#man-tuning">Tuning &amp; frequency metrics</a>
+            <a href="#man-volume">Volume metrics</a>
+            <a href="#man-ports">Port metrics</a>
+            <a href="#man-driver">Driver &amp; T/S metrics</a>
+            <a href="#man-cabin">Cabin &amp; in-car metrics</a>
+            <a href="#man-build">Build adjustments</a>
+            <a href="#man-charts">Charts &amp; warnings</a>
+          </nav>
+
+          <section id="man-overview">
+            <h3>Overview</h3>
+            <p>This calculator designs a <strong>6th-order bandpass</strong> sub wall (typically behind the B-pillar). You enter vehicle space, driver info, chamber tuning, and port geometry. The app computes port lengths, gross volumes, packaging fit, estimated in-car response, and warnings.</p>
+            <p>Number fields have <strong>− / +</strong> buttons to step values, or click the field to select and type a new number directly.</p>
+            <p>All response and T/S outputs are <strong>estimates</strong> — verify critical builds in WinISD or Hornresp before cutting wood.</p>
+          </section>
+
+          <section id="man-menus">
+            <h3>File / Edit / Help</h3>
+            <ul>
+              <li><strong>Save Design</strong> — writes every input and unit setting to a <code>.json</code> file.</li>
+              <li><strong>Load Design</strong> — restores a saved <code>.json</code> design file.</li>
+              <li><strong>Copy Share Link</strong> — copies a URL with your design encoded in <code>?state=</code> (share link takes priority over auto-save on load).</li>
+              <li><strong>Auto-save</strong> — inputs are saved to browser storage automatically; refresh restores your last session unless a share link is opened.</li>
+              <li><strong>Load Design</strong> — restores a saved file.</li>
+              <li><strong>Clear Design</strong> — clears all numeric inputs, clears optional T/S fields, unchecks toggles, and resets units to cu ft / in / sq in.</li>
+              <li><strong>Port length model</strong> (Edit menu) — choose Helmholtz (default), Quarter Wave, or All Considered Theory (experimental MLTL). Affects calculated port length in area mode and default length in diameter/slot modes.</li>
+              <li><strong>Color theme</strong> (Edit menu) — Midnight, Carbon, Ocean, Forest, or Slate Light. Saved automatically for next launch.</li>
+              <li><strong>Door tuning (Helmholtz)</strong> (Edit → Experimental) — treats the open door as a short port on cabin volume. Enter door mouth width × height, jamb thickness, and optional cabin seal/leakage. Warns when door resonance is within ±5 Hz of front/external tuning.</li>
+              <li><strong>End correction</strong> — follows port input: <strong>Round / Aero</strong> for area or diameter (auto 0.732×r or 0.614×r); <strong>Rectangular Slot</strong> for slot input (common walls 0–3, k 1.346–2.050×r).</li>
+            </ul>
+          </section>
+
+          <section id="man-order">
+            <h3>Order types</h3>
+            <table class="metric-table">
+              <tr><th>Parallel</th><td>Both chambers port directly into the cabin. End correction is set per chamber via port style: Round / Aero uses 0.732×r on both ports; Rectangular Slot uses your common-walls setting.</td></tr>
+              <tr><th>Series</th><td>Rear chamber ports into the front chamber (internal port). Front chamber ports to cabin (external). Only the external port receives cabin boost. Round / Aero: internal 0.614×r, external 0.732×r. Rectangular Slot: set common walls per port in each chamber section.</td></tr>
+              <tr><th>Ported</th><td>Single-chamber vented box — one net volume and one port to the cabin. Chamber 2 inputs are hidden. End correction follows port input (Round/Aero or Slot).</td></tr>
+              <tr><th>4th-Order Bandpass</th><td>Sealed rear (Vr) + ported front (Vf, F2) to cabin. <strong>Fcb = Fs × √(1 + Vas/Vr)</strong>; <strong>Qtc = Qts × √(1 + Vas/Vr)</strong>. Warns when Fcb &gt; F2. <strong>Low Fcb / low extension is sub-dependent:</strong> Fcb cannot go below Fs — enlarging Vr only approaches Fs. Shop <strong>low Fs</strong>, <strong>low Cms</strong> (stiff suspension → lower Vas), and <strong>Qts ~0.29–0.30</strong>, then size Vr so Fcb ≤ F2. <strong>Vf/Vr</strong> profiles: &lt;1.5 wide, 1.5–2.5 street banger, ≥2.5 SPL burp.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-tuning">
+            <h3>Tuning &amp; frequency metrics</h3>
+            <table class="metric-table">
+              <tr><th>Fb1 / Fb2</th><td>Target tuning (Hz) in area mode. In diameter or slot mode, Fb is computed from port geometry and locked — adjust W, H, L instead.</td></tr>
+              <tr><th>Est. bandwidth</th><td>Usable range Fb1×0.85 to Fb2×1.15 shown as a frequency span (not Hz spread). Tuning spread = log₂(Fb2/Fb1). Volume ratio = front ÷ rear net volume.</td></tr>
+              <tr><th>Cabin boost @ Fb2</th><td>Estimated dB gain at the front tuning frequency from cabin loading. <strong>Doors closed:</strong> 12 dB/oct below onset. <strong>Doors open:</strong> 3 dB/oct (broken vessel / boundary loading only).</td></tr>
+              <tr><th>Tolerance sweep</th><td>When enabled, models ±% chamber volume error and shows how Fb drifts or port length must change to hold tuning.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-volume">
+            <h3>Volume metrics</h3>
+            <table class="metric-table">
+              <tr><th>Net volume</th><td>Air volume inside the chamber after subtracting port, driver, bracing, and obstructions. Used directly in the port-length formula.</td></tr>
+              <tr><th>Net vol / sub</th><td>Chamber net volume divided by total driver count — airspace per woofer for that chamber. Also shown under the net volume input while in net basis.</td></tr>
+              <tr><th>Gross volume</th><td>Total constructed chamber volume including displacements and bracing allowance.</td></tr>
+              <tr><th>Volume basis — Net</th><td>You enter target net cu ft (required airspace). The breakdown adds port, driver, bracing, and other displacements to show built gross volume needed.</td></tr>
+              <tr><th>Volume basis — Gross L×W×H</th><td>You enter box dimensions. App subtracts wall loss (if outer dims), port, driver share, bracing, and extra displacement to get effective net.</td></tr>
+              <tr><th>Volume basis — Gross volume</th><td>Single gross number; net = gross minus all displacements.</td></tr>
+              <tr><th>Wall panel loss</th><td>Volume consumed by doubled walls when measuring outer dimensions (2 × wall thickness per axis).</td></tr>
+              <tr><th>Bracing allowance</th><td>Extra % of chamber volume reserved for internal braces and structure (default 15%). Turn off if already included in gross measurements.</td></tr>
+              <tr><th>Extra displacement</th><td>Fixed cu in subtracted per chamber (amp niches, obstructions).</td></tr>
+              <tr><th>Port displacement</th><td>Internal volume occupied by the port tunnel (area × length).</td></tr>
+              <tr><th>Total net / gross</th><td>Sum of both chambers for packaging and cabin coupling checks.</td></tr>
+              <tr><th>Est. wall depth</th><td>Total gross volume ÷ available width × height — how deep the B-pillar wall needs to be.</td></tr>
+              <tr><th>Box / cabin ratio</th><td>Total box net volume ÷ cabin volume. Very low or high ratios may affect cabin loading (see warnings).</td></tr>
+            </table>
+          </section>
+
+          <section id="man-ports">
+            <h3>Port metrics</h3>
+            <table class="metric-table">
+              <tr><th>Port area</th><td>Cross-section of the port opening (sq in). Larger area = shorter port for same Fb, but needs more wall space.</td></tr>
+              <tr><th>Port area / net vol</th><td>Port cross-section divided by chamber net volume (sq in per cu ft). Common slot-port sizing ratio shown per chamber.</td></tr>
+              <tr><th>Slot (W × H)</th><td>Outer slot dimensions plus port wall thickness (default 0.75 in). Inner opening = (W − 2×wall) × (H − 2×wall) — shown live when slot mode is selected.</td></tr>
+              <tr><th>Port length</th><td>Area mode: calculated from the selected port model (Edit → Port length model). Diameter &amp; slot modes: enter built port length, or leave blank to use calculated value. Slot uses W × H × L.</td></tr>
+              <tr><th>Helmholtz</th><td>Classic chamber + port resonance: length from Fb, net volume, and port area with end correction.</td></tr>
+              <tr><th>Quarter Wave</th><td>λ/4 tube length (c ÷ 4Fb) with end correction — volume-independent.</td></tr>
+              <tr><th>All Considered (MLTL)</th><td>Experimental pipe-cavity blend: L = (c/2πf) × arctan((A×c)/(2πf×V)). Blends Helmholtz and quarter-wave behavior by chamber size.</td></tr>
+              <tr><th>Round / Aero Port</th><td>Per-chamber port style. Auto end correction: 0.732×r (external/flanged) or 0.614×r (series internal). Best for round and aero ports.</td></tr>
+              <tr><th>Rectangular Slot Port</th><td>Per-chamber port style. Common walls (0–3): k scales from 1.346×r to 2.050×r. Common walls field appears when this style is selected.</td></tr>
+              <tr><th>Port : Sd ratio</th><td>Port area ÷ total system cone area. &lt;0.5:1 severe compression risk. 0.5–0.75: acceptable. ≥0.75: excellent airflow.</td></tr>
+              <tr><th>Port velocity @ Xmax</th><td>Estimated air speed in the port at peak excursion. &gt;25 m/s: caution. &gt;35 m/s: chuffing likely — enlarge port.</td></tr>
+              <tr><th>Port packaging</th><td>Compares port length to max B-pillar depth; suggests straight fit vs folded path.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-driver">
+            <h3>Driver &amp; T/S metrics</h3>
+            <table class="metric-table">
+              <tr><th>Sub size / count</th><td>Estimates Sd (cone area) from industry lookup or 80% effective radius for custom sizes.</td></tr>
+              <tr><th>Sd</th><td>Effective piston area (sq in). Used for port velocity, port:Sd ratio, and excursion estimates.</td></tr>
+              <tr><th>Fs</th><td>Free-air resonance (Hz). Fb1 below ~0.7×Fs risks unloading.</td></tr>
+              <tr><th>Qts / Qes</th><td>Total / electrical Q. Lower Qts (&lt;0.45) suits bandpass; Fs/Qes ≥45–50 preferred for 6th order.</td></tr>
+              <tr><th>Vas</th><td>Equivalent compliance volume — scales suggested chamber sizes in T/S suggestions.</td></tr>
+              <tr><th>Xmax</th><td>Maximum linear excursion (mm) — drives port velocity and excursion warnings.</td></tr>
+              <tr><th>Vd</th><td>Peak displacement volume (cu in). Optional; otherwise Sd × Xmax estimates driver displacement.</td></tr>
+              <tr><th>Driver displacement</th><td>Volume occupied by the motor/basket assembly inside the chamber.</td></tr>
+              <tr><th>Suitability score</th><td>Heuristic 0–100 based on Fs/Qes and Qts for 6th-order bandpass use.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-cabin">
+            <h3>Cabin &amp; in-car metrics</h3>
+            <table class="metric-table">
+              <tr><th>Longest cabin dimension</th><td>Drives cabin onset frequency (typically floor-to-roof or longest interior axis).</td></tr>
+              <tr><th>Cabin volume</th><td>Total passenger volume — used for box/cabin ratio and coupling adjustment.</td></tr>
+              <tr><th>Door tuning (experimental)</th><td>Door-jamb Helmholtz tuning: <strong>F_door</strong> from cabin volume, door mouth W×H, jamb thickness (+ end correction), and optional parasitic leak area when the cabin is not perfectly sealed. Chamber 3 shows jamb vs correction breakdown, leak/total vent area, closed cabin slope, and <strong>recommended jamb</strong> to match F2/Fb. Typical jamb 2–8 in; door mouth ~18–30 × 24–42 in. SPL door-open: align F_door to front tuning; musical: keep &gt;5 Hz separation.</td></tr>
+              <tr><th>Cabin sealed / leakage</th><td>When door tuning is enabled: <strong>Perfectly sealed</strong> = 12 dB/oct closed-door cabin gain and zero parasitic vent. Unsealed cabins degrade closed slope by 0.2 dB/oct per sq in of estimated leak area (floor 3 dB/oct). Leak area adds to door mouth area for F_door when not sealed.</td></tr>
+              <tr><th>Cabin Gain chart</th><td>Estimated low-frequency boost below onset — solid = doors closed, dashed = doors open.</td></tr>
+              <tr><th>Passband estimate</th><td>Simplified dual-resonance curve from Fb1 and Fb2 (not a full T/S simulation).</td></tr>
+              <tr><th>In-car overlay</th><td>Passband + cabin boost combined for a rough in-vehicle level estimate.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-build">
+            <h3>Build adjustments</h3>
+            <table class="metric-table">
+              <tr><th>Wall thickness</th><td>Default 1.5 in (2× 3/4" MDF). Subtracted from outer L×W×H on each axis when "measure from outer dims" is checked.</td></tr>
+              <tr><th>Bracing allowance</th><td>Percentage of net volume held for internal structure. Disable if your gross dims already account for braces.</td></tr>
+              <tr><th>Tolerance sweep range</th><td>±% used on the Tuning Sensitivity chart. Disable entirely to skip that analysis.</td></tr>
+            </table>
+          </section>
+
+          <section id="man-charts">
+            <h3>Charts &amp; warnings</h3>
+            <p><strong>Box Diagram</strong> — cross-section with chamber volumes, port routing (series vs parallel), cabin as Ch. 3 when door tuning is enabled, and packaging notes.</p>
+            <p><strong>Cabin Gain</strong> — boost vs frequency with Fb1, Fb2, estimated usable edges, and cabin onset markers.</p>
+            <p><strong>Passband Estimate</strong> — relative passband shape plus in-car overlay (closed vs open).</p>
+            <p><strong>Tuning Sensitivity</strong> — Fb drift and port length vs volume measurement error (when tolerance sweep is enabled).</p>
+            <p>Warnings aggregate port compression, velocity, packaging, T/S limits, excursion, and cabin coupling issues. Green = OK, amber = review, red = likely problem.</p>
+          </section>
+
+          <section>
+            <h3>Disclaimer</h3>
+            <p class="muted">This tool is a design aid, not a substitute for full electro-acoustic modeling or physical measurement.</p>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
+    <footer class="app-footer">
+      <span>Created by Anthony Albers</span>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="mailto:boxcalculatorbugs@gmail.com?subject=B-Pillar%20Calculator%20Bug%20Report">Report bugs: boxcalculatorbugs@gmail.com</a>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
