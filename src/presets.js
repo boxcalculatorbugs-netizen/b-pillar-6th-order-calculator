@@ -1,29 +1,43 @@
-/** Traditional series 6th default — single source of truth for startup preset */
+/**
+ * Realistic series 6th-order wall example — dual 18", slot ports, musical/SPL-friendly spread.
+ * Rear ~3.25 cu ft @ 32 Hz (internal slot into front); front ~5.75 cu ft @ 48 Hz (external slot to cabin).
+ * Volume ratio ~1.77:1; tuning spread ~0.58 oct (not a textbook 2:1 octave) — typical street build starting point.
+ */
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
-  cabinLength: 120,
-  cabinVolume: 80,
+  cabinLength: 115,
+  cabinVolume: 75,
   doorsOpen: false,
-  maxDepth: 18,
-  maxHeight: 14,
-  maxWidth: 52,
+  maxDepth: 26,
+  maxHeight: 15,
+  maxWidth: 54,
   wallThickness: 1.5,
-  bracingPercent: 15,
+  bracingPercent: 12,
   bracingEnabled: true,
-  tolerancePercent: 10,
+  tolerancePercent: 8,
   toleranceEnabled: true,
-  driverSize: 15,
+  driverSize: 18,
   driverCount: 2,
-  fb1: 30,
+  fb1: 32,
   vb1Basis: 'net',
-  vb1: 2.0,
-  port1Mode: 'area',
-  port1Area: 22,
-  fb2: 60,
+  vb1: 3.25,
+  port1Mode: 'slot',
+  port1SlotW: 14,
+  port1SlotH: 2.75,
+  port1Wall: 0.75,
+  port1CommonWalls: 2,
+  fb2: 48,
   vb2Basis: 'net',
-  vb2: 4.0,
-  port2Mode: 'area',
-  port2Area: 30
+  vb2: 5.75,
+  port2Mode: 'slot',
+  port2SlotW: 22,
+  port2SlotH: 4,
+  port2Wall: 0.75,
+  port2CommonWalls: 0,
+  tsFs: 32,
+  tsQts: 0.38,
+  tsVas: 4.5,
+  tsXmax: 18
 }
 
 export function applyStartupPreset() {
@@ -55,10 +69,20 @@ export function applyStartupPreset() {
   set('fb1', p.fb1)
   set('vb1', p.vb1)
   set('port1Mode', p.port1Mode)
-  set('port1Area', p.port1Area)
+  set('port1SlotW', p.port1SlotW)
+  set('port1SlotH', p.port1SlotH)
+  set('port1Wall', p.port1Wall)
+  set('port1CommonWalls', p.port1CommonWalls)
   set('vb2Basis', p.vb2Basis)
   set('fb2', p.fb2)
   set('vb2', p.vb2)
   set('port2Mode', p.port2Mode)
-  set('port2Area', p.port2Area)
+  set('port2SlotW', p.port2SlotW)
+  set('port2SlotH', p.port2SlotH)
+  set('port2Wall', p.port2Wall)
+  set('port2CommonWalls', p.port2CommonWalls)
+  if (p.tsFs != null) set('tsFs', p.tsFs)
+  if (p.tsQts != null) set('tsQts', p.tsQts)
+  if (p.tsVas != null) set('tsVas', p.tsVas)
+  if (p.tsXmax != null) set('tsXmax', p.tsXmax)
 }

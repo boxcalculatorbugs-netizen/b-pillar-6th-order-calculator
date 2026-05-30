@@ -119,12 +119,12 @@
           <div class="field-grid">
             <label>
               Longest cabin dimension
-              <input type="number" id="cabinLength" value="120" min="0" step="0.1" />
+              <input type="number" id="cabinLength" value="115" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
               Cabin volume
-              <input type="number" id="cabinVolume" value="80" min="0" step="0.1" />
+              <input type="number" id="cabinVolume" value="75" min="0" step="0.1" />
               <span class="unit-label volume-unit">cu ft</span>
             </label>
             <label class="toggle-row">
@@ -166,17 +166,17 @@
           <div class="field-grid">
             <label>
               Max depth (B-pillar to rear)
-              <input type="number" id="maxDepth" value="18" min="0" step="0.1" />
+              <input type="number" id="maxDepth" value="26" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
               Max height
-              <input type="number" id="maxHeight" value="14" min="0" step="0.1" />
+              <input type="number" id="maxHeight" value="15" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
               Max width
-              <input type="number" id="maxWidth" value="52" min="0" step="0.1" />
+              <input type="number" id="maxWidth" value="54" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
           </div>
@@ -205,7 +205,7 @@
             <label class="build-slider-row">
               Bracing allowance
               <span class="slider-row">
-                <input type="range" id="bracingPercent" min="0" max="25" step="1" value="15" />
+                <input type="range" id="bracingPercent" min="0" max="25" step="1" value="12" />
                 <span id="bracingPercentLabel">15%</span>
               </span>
             </label>
@@ -223,7 +223,7 @@
             <label class="build-slider-row">
               Sweep range
               <span class="slider-row">
-                <input type="range" id="tolerancePercent" min="5" max="20" step="1" value="10" />
+                <input type="range" id="tolerancePercent" min="5" max="20" step="1" value="8" />
                 <span id="tolerancePercentLabel">±10%</span>
               </span>
             </label>
@@ -235,7 +235,7 @@
           <div class="field-grid">
             <label>
               Subwoofer size
-              <input type="number" id="driverSize" value="15" min="0" step="0.5" list="driverSizeList" />
+              <input type="number" id="driverSize" value="18" min="0" step="0.5" list="driverSizeList" />
               <span class="unit-label length-unit">in</span>
               <datalist id="driverSizeList">
                 <option value="8"></option>
@@ -258,12 +258,12 @@
         <details class="input-section" id="tsSection">
           <summary>Driver T/S Parameters (optional)</summary>
           <div class="field-grid ts-grid">
-            <label>Fs (Hz) <input type="number" id="tsFs" step="0.1" placeholder="28" /></label>
-            <label>Qts <input type="number" id="tsQts" step="0.001" placeholder="0.40" /></label>
+            <label>Fs (Hz) <input type="number" id="tsFs" step="0.1" placeholder="32" value="32" /></label>
+            <label>Qts <input type="number" id="tsQts" step="0.001" placeholder="0.38" value="0.38" /></label>
             <label>Qes <input type="number" id="tsQes" step="0.001" placeholder="0.45" /></label>
             <label>
               Vas
-              <input type="number" id="tsVas" step="0.01" placeholder="2.5" />
+              <input type="number" id="tsVas" step="0.01" placeholder="4.5" value="4.5" />
               <select id="tsVasUnit"><option value="cuft">cu ft</option><option value="liters">L</option></select>
             </label>
             <label>
@@ -272,7 +272,7 @@
               <select id="tsSdUnit"><option value="sqin">sq in</option><option value="sqcm">cm²</option></select>
             </label>
             <label>Re (Ω) <input type="number" id="tsRe" step="0.01" placeholder="3.6" /></label>
-            <label>Xmax (mm) <input type="number" id="tsXmax" step="0.1" placeholder="16" /></label>
+            <label>Xmax (mm) <input type="number" id="tsXmax" step="0.1" placeholder="18" value="18" /></label>
             <label>Pe (W) <input type="number" id="tsPe" step="1" placeholder="800" /></label>
             <label>Vd (cu in) <input type="number" id="tsVd" step="0.1" placeholder="optional" /></label>
           </div>
@@ -284,7 +284,7 @@
         <details open class="input-section">
           <summary id="chamber1Summary">Chamber 1 — Rear / Internal Port → Front</summary>
           <div class="field-grid">
-            <label class="ch1-port-field">Fb1 (Hz) <input type="number" id="fb1" value="30" min="0" step="0.1" /><span id="fb1LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label class="ch1-port-field">Fb1 (Hz) <input type="number" id="fb1" value="32" min="0" step="0.1" /><span id="fb1LockHint" class="fb-lock-hint hidden">computed from port</span></label>
             <label>
               Volume basis
               <select id="vb1Basis">
@@ -295,7 +295,7 @@
             </label>
             <label id="vb1NetLabel">
               <span id="vb1NetTitle">Net volume</span>
-              <input type="number" id="vb1" value="2.0" min="0" step="0.01" />
+              <input type="number" id="vb1" value="3.25" min="0" step="0.01" />
               <span class="unit-label volume-unit">cu ft</span>
               <span id="vb1PerSub" class="field-hint hidden"></span>
             </label>
@@ -333,7 +333,7 @@
               <select id="port1Mode">
                 <option value="area">Area (sq in)</option>
                 <option value="diameter">Diameter (in)</option>
-                <option value="slot">Slot (W × H × L)</option>
+                <option value="slot" selected>Slot (W × H × L)</option>
               </select>
             </label>
             <label id="port1CommonWallsLabel" class="hidden ch1-port-field">
@@ -357,7 +357,7 @@
             </label>
             <label id="port1SlotWLabel" class="hidden ch1-port-field">
               Slot width (outer)
-              <input type="number" id="port1SlotW" value="11" min="0" step="0.1" />
+              <input type="number" id="port1SlotW" value="14" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port1SlotHLabel" class="hidden ch1-port-field">
@@ -382,7 +382,7 @@
         <details open class="input-section" id="chamber2Section">
           <summary id="chamber2Summary">Chamber 2 — Front / External Port → Cabin</summary>
           <div class="field-grid">
-            <label id="fb2Label"><span id="fb2LabelText">Fb2 (Hz)</span> <input type="number" id="fb2" value="60" min="0" step="0.1" /><span id="fb2LockHint" class="fb-lock-hint hidden">computed from port</span></label>
+            <label id="fb2Label"><span id="fb2LabelText">Fb2 (Hz)</span> <input type="number" id="fb2" value="48" min="0" step="0.1" /><span id="fb2LockHint" class="fb-lock-hint hidden">computed from port</span></label>
             <label>
               Volume basis
               <select id="vb2Basis">
@@ -393,7 +393,7 @@
             </label>
             <label id="vb2NetLabel">
               <span id="vb2NetTitle">Net volume</span>
-              <input type="number" id="vb2" value="4.0" min="0" step="0.01" />
+              <input type="number" id="vb2" value="5.75" min="0" step="0.01" />
               <span class="unit-label volume-unit">cu ft</span>
               <span id="vb2PerSub" class="field-hint hidden"></span>
             </label>
@@ -431,7 +431,7 @@
               <select id="port2Mode">
                 <option value="area">Area (sq in)</option>
                 <option value="diameter">Diameter (in)</option>
-                <option value="slot">Slot (W × H × L)</option>
+                <option value="slot" selected>Slot (W × H × L)</option>
               </select>
             </label>
             <label id="port2CommonWallsLabel" class="hidden">
@@ -455,12 +455,12 @@
             </label>
             <label id="port2SlotWLabel" class="hidden">
               Slot width (outer)
-              <input type="number" id="port2SlotW" value="12" min="0" step="0.1" />
+              <input type="number" id="port2SlotW" value="22" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port2SlotHLabel" class="hidden">
               Slot height (outer)
-              <input type="number" id="port2SlotH" value="3" min="0" step="0.1" />
+              <input type="number" id="port2SlotH" value="4" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
             <label id="port2WallLabel" class="hidden">

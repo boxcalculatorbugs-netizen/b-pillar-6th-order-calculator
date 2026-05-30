@@ -27,7 +27,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 | **Parallel** | Vents to cabin | Vents to cabin | 0.732×r (flanged) both |
 | **Series** | Vents into front chamber | Vents to cabin | 0.614×r internal, 0.732×r external |
 
-**Default preset (Series):** traditional 1:2 volume ratio (front = 2× rear), one-octave tuning (Fb2 = 2× Fb1) — e.g. 30 Hz rear / 60 Hz front, 2.0 / 4.0 cu ft net.
+**Default preset (Series):** dual **18"** wall — rear **3.25 cu ft @ 32 Hz** (internal slot into front), front **5.75 cu ft @ 48 Hz** (external slot to cabin). ~**1.77:1** volume ratio and **~0.58 oct** tuning spread — a realistic street/SPL starting point, not a textbook 30/60 Hz octave demo.
 
 ## Features
 
