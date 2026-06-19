@@ -247,6 +247,55 @@ if (seriesResult.summary.totalSdSqIn !== 250) {
 }
 assertClose(seriesResult.chambers.chamber1.portAreaPerCuFt, 11, 0.5, 'Series Ch.1 port area per cu ft')
 
+const portSplitResult = runAll({
+  orderType: 'series',
+  port1FrontSharePct: 50,
+  driverSizeIn: 15,
+  driverCount: 2,
+  wallThicknessIn: 1.5,
+  cabinLengthIn: 120,
+  cabinVolumeCuFt: 80,
+  maxDepthIn: 18,
+  maxHeightIn: 14,
+  maxWidthIn: 52,
+  ts: {},
+  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
+})
+const internalTotal = portSplitResult.chambers.chamber1.internalPortTotalCuFt
+if (internalTotal <= 0) {
+  throw new Error('Series port split test needs positive internal port volume')
+}
+const frontShare = portSplitResult.chambers.chamber1.internalPortFrontShareCuFt
+const rearShare = portSplitResult.chambers.chamber1.portVolumeCuFt
+assertClose(frontShare, internalTotal * 0.5, 0.0001, '50% internal port to front chamber')
+assertClose(rearShare, internalTotal * 0.5, 0.0001, '50% internal port stays in rear breakdown')
+assertClose(
+  portSplitResult.volumeBreakdown.chamber2.portCuFt,
+  portSplitResult.chambers.chamber2.portVolumeCuFt,
+  0.0001,
+  'Ch.2 breakdown port matches effective displacement'
+)
+
+const parallelIgnoreSplit = runAll({
+  orderType: 'parallel',
+  port1FrontSharePct: 100,
+  driverSizeIn: 15,
+  driverCount: 2,
+  wallThicknessIn: 1.5,
+  cabinLengthIn: 120,
+  cabinVolumeCuFt: 80,
+  maxDepthIn: 18,
+  maxHeightIn: 14,
+  maxWidthIn: 52,
+  ts: {},
+  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
+})
+if (parallelIgnoreSplit.chambers.chamber1.internalPortFrontShareCuFt !== 0) {
+  throw new Error('Parallel order should ignore internal port front share')
+}
+
 const noCabinResult = runAll({
   orderType: 'series',
   includeCabin: false,

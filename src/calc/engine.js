@@ -168,14 +168,25 @@ function resolveEffectiveFb(chamber, portResult, netVol, area, orderType, chambe
   )
 }
 
-function runChamberIteration(chamber, area, orderType, chamberIndex, driverShareCuFt, build, calcMode) {
+function runChamberIteration(
+  chamber,
+  area,
+  orderType,
+  chamberIndex,
+  driverShareCuFt,
+  build,
+  calcMode,
+  breakdownPortVolumeCuFt = null
+) {
   const volumeBasis = chamber.volumeBasis || 'net'
   let netVol = chamber.volumeCuFt
   let portResult = chamberPortResult(chamber, area, orderType, chamberIndex, netVol, calcMode)
+  const portVolForBreakdown = (vol) =>
+    breakdownPortVolumeCuFt != null ? breakdownPortVolumeCuFt : vol
 
   if (volumeBasis === 'net') {
     const breakdown = computeVolumeBreakdown({
-      ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
+      ...breakdownOpts(chamber, build, portVolForBreakdown(portResult.portVolumeCuFt), driverShareCuFt),
       netVolumeCuFt: netVol
     })
     return { netVol, portResult, breakdown }
@@ -183,17 +194,19 @@ function runChamberIteration(chamber, area, orderType, chamberIndex, driverShare
 
   for (let pass = 0; pass < 3; pass++) {
     portResult = chamberPortResult(chamber, area, orderType, chamberIndex, netVol, calcMode)
+    const bdPortVol = portVolForBreakdown(portResult.portVolumeCuFt)
     const breakdown = computeVolumeBreakdown({
-      ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
+      ...breakdownOpts(chamber, build, bdPortVol, driverShareCuFt),
       volumeBasis,
       netVolumeCuFt: netVol
     })
     netVol = breakdown.effectiveNetCuFt
     if (pass === 2) {
       portResult = chamberPortResult(chamber, area, orderType, chamberIndex, netVol, calcMode)
-      breakdown.portCuFt = portResult.portVolumeCuFt
+      const finalBdPortVol = portVolForBreakdown(portResult.portVolumeCuFt)
+      breakdown.portCuFt = finalBdPortVol
       breakdown.effectiveNetCuFt = computeVolumeBreakdown({
-        ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
+        ...breakdownOpts(chamber, build, finalBdPortVol, driverShareCuFt),
         volumeBasis,
         netVolumeCuFt: netVol
       }).effectiveNetCuFt
@@ -202,6 +215,11 @@ function runChamberIteration(chamber, area, orderType, chamberIndex, driverShare
   }
 
   return { netVol, portResult, breakdown: null }
+}
+
+function splitSeriesInternalPort(totalCuFt, frontSharePct) {
+  const front = totalCuFt * (frontSharePct / 100)
+  return { total: totalCuFt, front, rear: totalCuFt - front }
 }
 
 export function runAll(inputs) {
@@ -227,7 +245,8 @@ export function runAll(inputs) {
     doorHeightIn = 0,
     doorJambThicknessIn = 0,
     isCabinSealed = false,
-    cabinLeakageAreaSqIn = 15
+    cabinLeakageAreaSqIn = 15,
+    port1FrontSharePct = 0
   } = inputs
 
   const cabinLeakage = doorTuningExperimental
@@ -257,12 +276,33 @@ export function runAll(inputs) {
   const driverShare1 = isPorted(orderType) ? driverDisplacement : driverDisplacement / 2
   const driverShare2 = isPorted(orderType) ? 0 : driverDisplacement / 2
 
-  const iter1 = isFourth(orderType)
+  let iter1 = isFourth(orderType)
     ? runSealedChamberIteration(chamber1, driverShare1, build)
     : runChamberIteration(chamber1, area1, orderType, 1, driverShare1, build, calcMode)
-  const iter2 = isPorted(orderType)
+  let iter2 = isPorted(orderType)
     ? { netVol: 0, portResult: emptyPortResult(), breakdown: null }
     : runChamberIteration(chamber2, area2, orderType, 2, driverShare2, build, calcMode)
+
+  const seriesFrontSharePct = isSeries ? clamp(port1FrontSharePct, 0, 100) : 0
+  let internalPortSplit = { total: 0, front: 0, rear: 0 }
+  let ch1PortVolBreakdown = iter1.portResult.portVolumeCuFt
+  let ch2PortVolBreakdown = iter2.portResult?.portVolumeCuFt ?? 0
+
+  if (isSeries && iter1.portResult.portVolumeCuFt > 0) {
+    internalPortSplit = splitSeriesInternalPort(iter1.portResult.portVolumeCuFt, seriesFrontSharePct)
+    ch1PortVolBreakdown = internalPortSplit.rear
+    ch2PortVolBreakdown = (iter2.portResult?.portVolumeCuFt ?? 0) + internalPortSplit.front
+    if (!isFourth(orderType)) {
+      iter1 = runChamberIteration(
+        chamber1, area1, orderType, 1, driverShare1, build, calcMode, ch1PortVolBreakdown
+      )
+    }
+    if (!isPorted(orderType)) {
+      iter2 = runChamberIteration(
+        chamber2, area2, orderType, 2, driverShare2, build, calcMode, ch2PortVolBreakdown
+      )
+    }
+  }
 
   const netVol1 = iter1.netVol
   const netVol2 = iter2.netVol
@@ -270,11 +310,11 @@ export function runAll(inputs) {
   const port2 = iter2.portResult
 
   const breakdown1 = iter1.breakdown || computeVolumeBreakdown({
-    ...breakdownOpts(chamber1, build, port1.portVolumeCuFt, driverShare1),
+    ...breakdownOpts(chamber1, build, ch1PortVolBreakdown, driverShare1),
     netVolumeCuFt: netVol1
   })
   const breakdown2 = iter2.breakdown || computeVolumeBreakdown({
-    ...breakdownOpts(chamber2, build, port2.portVolumeCuFt, driverShare2),
+    ...breakdownOpts(chamber2, build, ch2PortVolBreakdown, driverShare2),
     netVolumeCuFt: netVol2
   })
 
@@ -375,7 +415,10 @@ export function runAll(inputs) {
       portLengthIn: port1.physicalLengthIn,
       calculatedLengthIn: port1.calculatedLengthIn,
       lengthOverridden: port1.lengthOverridden,
-      portVolumeCuFt: port1.portVolumeCuFt,
+      portVolumeCuFt: ch1PortVolBreakdown,
+      internalPortTotalCuFt: isSeries ? internalPortSplit.total : 0,
+      internalPortFrontShareCuFt: isSeries ? internalPortSplit.front : 0,
+      port1FrontSharePct: seriesFrontSharePct,
       endCorrectionK: port1.endCorrectionK,
       endCorrectionFactor: port1.endCorrectionFactor,
       commonWalls: port1.commonWalls,
@@ -405,7 +448,8 @@ export function runAll(inputs) {
       portLengthIn: port2.physicalLengthIn,
       calculatedLengthIn: port2.calculatedLengthIn,
       lengthOverridden: port2.lengthOverridden,
-      portVolumeCuFt: port2.portVolumeCuFt,
+      portVolumeCuFt: ch2PortVolBreakdown,
+      internalPortFrontShareCuFt: isSeries ? internalPortSplit.front : 0,
       endCorrectionK: port2.endCorrectionK,
       endCorrectionFactor: port2.endCorrectionFactor,
       commonWalls: port2.commonWalls,
@@ -476,13 +520,6 @@ export function runAll(inputs) {
       : []),
     ...packaging.warnings
   ]
-
-  if (isSeries && port1.portVolumeCuFt > 0) {
-    allWarnings.unshift({
-      level: 'amber',
-      message: `Internal port displacement is ${port1.portVolumeCuFt.toFixed(2)} cu ft — subtract from whichever chamber the port physically occupies (rear or front).`
-    })
-  }
 
   if (fourthOrderAnalysis?.fightingBox) {
     allWarnings.unshift({

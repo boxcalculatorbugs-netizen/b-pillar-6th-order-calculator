@@ -123,8 +123,7 @@ function resolvePortWallIn(ch) {
     const v = parseFloat(raw)
     if (Number.isFinite(v)) return toInches(v)
   }
-  const global = num('portThickness')
-  return global > 0 ? toInches(global) : DEFAULT_PORT_WALL_THICKNESS_IN
+  return DEFAULT_PORT_WALL_THICKNESS_IN
 }
 
 function readChamber(ch) {
@@ -171,7 +170,6 @@ function readInputs() {
     maxWidthIn: toInches(num('maxWidth')),
     wallThicknessIn: toInches(num('wallThickness')) || 1.5,
     baffleThicknessIn: toInches(num('baffleThickness')),
-    portThicknessIn: toInches(num('portThickness')) || DEFAULT_PORT_WALL_THICKNESS_IN,
     driverSizeIn: num('driverSize'),
     driverCount: Math.max(1, parseInt($('driverCount').value, 10) || 1),
     ts: {
@@ -188,7 +186,8 @@ function readInputs() {
       Vd: num('tsVd') || null
     },
     chamber1: readChamber(1),
-    chamber2: readChamber(2)
+    chamber2: readChamber(2),
+    port1FrontSharePct: parseInt($('port1FrontShare')?.value ?? '0', 10) || 0
   }
 }
 
@@ -355,6 +354,12 @@ function renderChamberResults(elId, chamber, excursionInfo, orderType, portRatio
     <div class="result-row"><span>Port length</span><span class="val">${fmtLen(chamber.portLengthIn)}</span></div>
     ${lengthNote}
     <div class="result-row"><span>Port displacement</span><span class="val">${fmtVol(chamber.portVolumeCuFt)}</span></div>
+    ${isSeries && chamber.portRole === 'internal' && chamber.internalPortTotalCuFt > 0
+      ? `<div class="result-row"><span>Internal port total</span><span class="val">${fmtVol(chamber.internalPortTotalCuFt)}${chamber.internalPortFrontShareCuFt > 0 ? ` <span class="muted-val">(${fmtVolSmall(chamber.portVolumeCuFt)} rear · ${fmtVolSmall(chamber.internalPortFrontShareCuFt)} front)</span>` : ''}</span></div>`
+      : ''}
+    ${isSeries && chamber.portRole === 'external' && chamber.internalPortFrontShareCuFt > 0
+      ? `<div class="result-row"><span>Includes internal port</span><span class="val">${fmtVol(chamber.internalPortFrontShareCuFt)} from rear chamber</span></div>`
+      : ''}
     ${portRatio ? `<div class="result-row"><span>Port : Sd ratio</span><span class="val port-ratio-${portRatio.level}">${portRatio.message}</span></div>` : ''}
     ${chamber.portInputMode === 'slot' && chamber.portSlotInnerWidthIn ? `<div class="result-row"><span>Slot opening</span><span class="val">${chamber.portSlotInnerWidthIn.toFixed(2)} × ${chamber.portSlotInnerHeightIn.toFixed(2)} × ${chamber.portLengthIn.toFixed(2)} in</span></div>` : ''}
     ${vel ? `<div class="result-row"><span>Port velocity @ Xmax</span><span class="val">${vel.toFixed(1)} m/s</span></div>` : ''}
@@ -368,7 +373,6 @@ function renderChamberResults(elId, chamber, excursionInfo, orderType, portRatio
     ${buildVolRow}
     ${portRows}
     ${cabinBoostRow}
-    ${isSeries && chamber.portRole === 'internal' ? `<div class="result-row"><span>Note</span><span class="val muted-val">Subtract displacement from host chamber gross volume</span></div>` : ''}
   `
 }
 
@@ -738,6 +742,10 @@ function updateOrderTypeUI(orderType) {
     el.classList.toggle('hidden', isFourth(orderType))
   })
 
+  document.querySelectorAll('.series-port-split').forEach((el) => {
+    el.classList.toggle('hidden', orderType !== 'series')
+  })
+
   $('chamber2Section')?.classList.toggle('hidden', !showChamber2(orderType))
   $('chamber2ResultBlock')?.classList.toggle('hidden', !showChamber2(orderType))
 
@@ -830,6 +838,7 @@ function recalculate() {
 
   updateChartTabs(result)
   updateCharts(result)
+  syncPort1DispCalc(result)
   syncComputedFbFields(result)
   updateNetVolPerSubReadouts(result.driverArray.count)
 }
@@ -899,23 +908,17 @@ function updateSlotAreaCalc(chamber) {
 
 function togglePortMode(chamber) {
   const mode = $(`port${chamber}Mode`).value
-  const isArea = mode === 'area'
-  const isDiam = mode === 'diameter'
-  const isSlot = mode === 'slot'
-  const showLength = isDiam || isSlot
-  $(`port${chamber}AreaLabel`).classList.toggle('hidden', !isArea)
-  $(`port${chamber}DiamLabel`).classList.toggle('hidden', !isDiam)
-  $(`port${chamber}SlotWLabel`).classList.toggle('hidden', !isSlot)
-  $(`port${chamber}SlotHLabel`).classList.toggle('hidden', !isSlot)
-  $(`port${chamber}WallLabel`).classList.toggle('hidden', !isSlot)
-  $(`port${chamber}LengthLabel`).classList.toggle('hidden', !showLength)
-  if (isSlot) {
+  const grid = $(`chamber${chamber}Grid`) || $(`port${chamber}Mode`)?.closest('.field-grid')
+  grid?.querySelectorAll('[data-port-modes]').forEach((el) => {
+    const modes = el.dataset.portModes.split(/\s+/)
+    el.classList.toggle('hidden', !modes.includes(mode))
+  })
+  if (mode === 'slot') {
     const wallsEl = $(`port${chamber}CommonWalls`)
     if (wallsEl && !wallsEl.dataset.userSet) {
       wallsEl.value = String(defaultCommonWallsForChamber(chamber))
     }
   }
-  togglePortStyleForChamber(chamber)
   updateSlotAreaCalc(chamber)
   updateFbInputLock(chamber)
 }
@@ -947,6 +950,25 @@ function toggleVolumeBasis(chamber) {
   if (grossInput) {
     grossInput.disabled = !isGrossVol
     grossInput.tabIndex = isGrossVol ? 0 : -1
+  }
+}
+
+function updatePort1FrontShareLabel() {
+  const el = $('port1FrontShareLabel')
+  const slider = $('port1FrontShare')
+  if (!el || !slider) return
+  const front = parseInt(slider.value, 10) || 0
+  el.textContent = `${front}% front · ${100 - front}% rear`
+}
+
+function syncPort1DispCalc(result) {
+  const el = $('port1DispCalc')
+  if (!el || result.orderType !== 'series') return
+  const total = result.chambers?.chamber1?.internalPortTotalCuFt
+  if (total > 0) {
+    el.textContent = `Port displacement: ${fmtVol(total)} total (calculated from area × length)`
+  } else {
+    el.textContent = 'Port displacement: — (calculated)'
   }
 }
 
@@ -996,6 +1018,7 @@ function refreshUIFromForm() {
   toggleVolumeBasis(1)
   toggleVolumeBasis(2)
   updateIncludeCabinUI()
+  updatePort1FrontShareLabel()
   updateUnitLabels()
   updateCalcModeMenuUI()
   updatePortLengthPlaceholders()
@@ -1199,8 +1222,7 @@ function updateNetVolPerSubReadouts(driverCount) {
 }
 
 function togglePortStyleForChamber(ch) {
-  const isRect = $(`port${ch}Mode`)?.value === 'slot'
-  $(`port${ch}CommonWallsLabel`)?.classList.toggle('hidden', !isRect)
+  togglePortMode(ch)
 }
 
 function togglePortStyleUI() {
@@ -1288,7 +1310,7 @@ function bindEvents() {
   const inputIds = [
     'cabinLength', 'cabinVolume', 'doorWidth', 'doorHeight', 'doorJambThickness', 'cabinLeakageArea',
     'maxDepth', 'maxHeight', 'maxWidth',
-    'wallThickness', 'baffleThickness', 'portThickness',
+    'wallThickness', 'baffleThickness',
     'driverSize', 'driverCount',
     'tsFs', 'tsQts', 'tsQes', 'tsVas', 'tsSd', 'tsRe', 'tsXmax', 'tsPe', 'tsVd',
     'fb1', 'vb1', 'vb1Gross', 'vb1Len', 'vb1Width', 'vb1Height', 'vb1Extra',
@@ -1302,14 +1324,15 @@ function bindEvents() {
     scheduleRecalculate()
   })
 
+  $('port1FrontShare')?.addEventListener('input', () => {
+    updatePort1FrontShareLabel()
+    scheduleRecalculate()
+  })
+
   inputIds.forEach((id) => {
     $(id).addEventListener('input', () => {
       if (id.match(/^port[12]SlotW|^port[12]SlotH|^port[12]Wall$/)) {
         updateSlotAreaCalc(id.includes('port1') ? 1 : 2)
-      }
-      if (id === 'portThickness') {
-        updateSlotAreaCalc(1)
-        updateSlotAreaCalc(2)
       }
       if (id.startsWith('ts')) updateTsFourthHint($('orderType').value)
       scheduleRecalculate()

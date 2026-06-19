@@ -15,7 +15,6 @@ export const SERIES_STARTUP_PRESET = {
   maxWidth: 58,
   wallThickness: 1.5,
   baffleThickness: 0.75,
-  portThickness: 0.75,
   driverSize: 18,
   driverCount: 2,
   fb1: 25,
@@ -25,6 +24,7 @@ export const SERIES_STARTUP_PRESET = {
   port1SlotW: 18,
   port1SlotH: 3.5,
   port1CommonWalls: 2,
+  port1FrontShare: 0,
   fb2: 60,
   vb2Basis: 'net',
   vb2: 20,
@@ -60,7 +60,6 @@ export function applyStartupPreset() {
   set('maxWidth', p.maxWidth)
   set('wallThickness', p.wallThickness)
   set('baffleThickness', p.baffleThickness)
-  set('portThickness', p.portThickness)
   set('driverSize', p.driverSize)
   set('driverCount', p.driverCount)
   set('vb1Basis', p.vb1Basis)
@@ -71,6 +70,7 @@ export function applyStartupPreset() {
   set('port1SlotH', p.port1SlotH)
   set('port1Wall', '')
   set('port1CommonWalls', p.port1CommonWalls)
+  if (p.port1FrontShare != null) set('port1FrontShare', p.port1FrontShare)
   set('port1Length', '')
   set('vb2Basis', p.vb2Basis)
   set('fb2', p.fb2)

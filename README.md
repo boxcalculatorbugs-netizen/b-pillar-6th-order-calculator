@@ -33,7 +33,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 - **Dual-chamber port calculator** — Helmholtz port length with end correction
 - **Port input modes** — area, round diameter, or **slot (W × H)** with port wall thickness
 - **Volume basis per chamber** — net, gross L×W×H (outer or internal), or gross volume
-- **Build adjustments** — wall thickness (default **1.5 in**), baffle thickness (**0.75 in**), port thickness (**0.75 in** default for slots)
+- **Build adjustments** — wall thickness (default **1.5 in**), baffle thickness (**0.75 in**)
 - **Volume breakdown table** — gross → port → driver → baffle → effective net
 - **Optional cabin** — include or exclude cabin gain, coupling, and in-car overlays
 - **Driver array** — sub size/count with auto Sd and port:Sd ratio warnings
@@ -46,7 +46,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 |---------|---------|
 | **Vehicle / Cabin** | Longest interior dimension, cabin volume, include cabin toggle, doors open |
 | **B-Pillar Space** | Max depth, height, width for the wall |
-| **Build Adjustments** | Wall thickness, baffle thickness, port thickness |
+| **Build Adjustments** | Wall thickness, baffle thickness |
 | **Driver Array** | Sub size and count → auto cone area (Sd) |
 | **Chamber 1 / 2** | Fb, volume basis, port mode (area / diameter / slot) |
 
