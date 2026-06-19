@@ -2,17 +2,15 @@
  * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front @ 60 Hz.
  * Rear: internal slot. Front: 22 sq in area port (60 Hz target; large slots cannot tune that high in 20 cu ft).
  */
-export const STARTUP_PRESET_VERSION = 4
+export const STARTUP_PRESET_VERSION = 5
 
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
   cabinLength: 115,
-  cabinVolume: 75,
+  vehicleInteriorVolume: 75,
+  ampRackVolume: 0,
   includeCabin: true,
   doorsOpen: false,
-  maxDepth: 32,
-  maxHeight: 16,
-  maxWidth: 58,
   wallThickness: 1.5,
   baffleThickness: 0.75,
   driverSize: 18,
@@ -52,12 +50,10 @@ export function applyStartupPreset() {
 
   set('orderType', p.orderType)
   set('cabinLength', p.cabinLength)
-  set('cabinVolume', p.cabinVolume)
+  set('vehicleInteriorVolume', p.vehicleInteriorVolume)
+  set('ampRackVolume', p.ampRackVolume)
   setCheck('includeCabin', p.includeCabin !== false)
   setCheck('doorsOpen', p.doorsOpen)
-  set('maxDepth', p.maxDepth)
-  set('maxHeight', p.maxHeight)
-  set('maxWidth', p.maxWidth)
   set('wallThickness', p.wallThickness)
   set('baffleThickness', p.baffleThickness)
   set('driverSize', p.driverSize)

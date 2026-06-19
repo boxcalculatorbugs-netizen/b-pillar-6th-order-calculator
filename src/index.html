@@ -125,10 +125,18 @@
               <span class="unit-label length-unit">in</span>
             </label>
             <label>
-              Cabin volume
-              <input type="number" id="cabinVolume" value="75" min="0" step="0.1" />
+              Total vehicle interior volume
+              <input type="number" id="vehicleInteriorVolume" value="75" min="0" step="0.1" />
               <span class="unit-label volume-unit">cu ft</span>
+              <span class="field-hint">Published interior volume from vehicle specs</span>
             </label>
+            <label>
+              Amp rack volume
+              <input type="number" id="ampRackVolume" value="0" min="0" step="0.1" />
+              <span class="unit-label volume-unit">cu ft</span>
+              <span class="field-hint">Displacement for amps/processors in the cabin</span>
+            </label>
+            <p id="effectiveCabinReadout" class="field-hint port-area-calc">Effective cabin: —</p>
             <label class="toggle-row">
               <input type="checkbox" id="includeCabin" checked />
               Include cabin in calculations
@@ -168,27 +176,6 @@
         </details>
 
         <details open class="input-section">
-          <summary>B-Pillar Space</summary>
-          <div class="field-grid">
-            <label>
-              Max depth (B-pillar to rear)
-              <input type="number" id="maxDepth" value="32" min="0" step="0.1" />
-              <span class="unit-label length-unit">in</span>
-            </label>
-            <label>
-              Max height
-              <input type="number" id="maxHeight" value="16" min="0" step="0.1" />
-              <span class="unit-label length-unit">in</span>
-            </label>
-            <label>
-              Max width
-              <input type="number" id="maxWidth" value="58" min="0" step="0.1" />
-              <span class="unit-label length-unit">in</span>
-            </label>
-          </div>
-        </details>
-
-        <details open class="input-section">
           <summary>Build Adjustments</summary>
           <div class="field-grid">
             <label>
@@ -201,7 +188,7 @@
               Baffle thickness
               <input type="number" id="baffleThickness" value="0.75" min="0" step="0.125" />
               <span class="unit-label length-unit">in</span>
-              <span class="field-hint">Internal divider between chambers — displacement uses B-pillar max W×H</span>
+              <span class="field-hint">Internal divider — uses largest chamber gross W×H when entered; 0 if net-only</span>
             </label>
           </div>
         </details>
@@ -607,14 +594,14 @@
               <tr><th>Volume basis — Gross L×W×H</th><td>You enter box dimensions. App subtracts wall loss (if outer dims), port, driver share, baffle, and extra displacement to get effective net.</td></tr>
               <tr><th>Volume basis — Gross volume</th><td>Single gross number; net = gross minus all displacements.</td></tr>
               <tr><th>Wall panel loss</th><td>Volume consumed by doubled walls when measuring outer dimensions (2 × wall thickness per axis).</td></tr>
-              <tr><th>Baffle panel</th><td>Half of the internal divider displacement (B-pillar max W × H × baffle thickness) subtracted per chamber in dual-chamber designs.</td></tr>
+              <tr><th>Baffle panel</th><td>Half of the internal divider displacement (largest chamber gross W × H × baffle thickness when gross dims are entered) subtracted per chamber in dual-chamber designs.</td></tr>
               <tr><th>Bracing allowance</th><td>Extra % of chamber volume reserved for internal braces and structure (default 15%). Turn off if already included in gross measurements.</td></tr>
               <tr><th>Port displacement</th><td>Air volume the port occupies inside the chamber (area × length). Always included in gross/net breakdown. Series 6th: use the rear-chamber slider to assign internal port volume to the front chamber (0% = all rear, 100% = all front).</td></tr>
               <tr><th>Extra displacement</th><td>Fixed cu in subtracted per chamber for non-port obstructions (amp niches, etc.).</td></tr>
               <tr><th>Port displacement</th><td>Internal volume occupied by the port tunnel (area × length).</td></tr>
-              <tr><th>Total net / gross</th><td>Sum of both chambers for packaging and cabin coupling checks.</td></tr>
-              <tr><th>Est. wall depth</th><td>Total gross volume ÷ available width × height — how deep the B-pillar wall needs to be.</td></tr>
-              <tr><th>Box / cabin ratio</th><td>Total box net volume ÷ cabin volume. Very low or high ratios may affect cabin loading (see warnings).</td></tr>
+              <tr><th>Total net / gross</th><td>Sum of both chambers for cabin coupling checks.</td></tr>
+              <tr><th>Effective cabin volume</th><td>Total vehicle interior − built gross box − amp rack displacement. Used for box/cabin ratio and door tuning.</td></tr>
+              <tr><th>Box / effective cabin ratio</th><td>Total box net volume ÷ effective cabin volume. Very low or high ratios may affect cabin loading (see warnings).</td></tr>
             </table>
           </section>
 
@@ -632,7 +619,6 @@
               <tr><th>Rectangular Slot Port</th><td>Per-chamber port style. Common walls (0–3): k scales from 1.346×r to 2.050×r. Common walls field appears when this style is selected.</td></tr>
               <tr><th>Port : Sd ratio</th><td>Port area ÷ total system cone area. &lt;0.5:1 severe compression risk. 0.5–0.75: acceptable. ≥0.75: excellent airflow.</td></tr>
               <tr><th>Port velocity @ Xmax</th><td>Estimated air speed in the port at peak excursion. &gt;25 m/s: caution. &gt;35 m/s: chuffing likely — enlarge port.</td></tr>
-              <tr><th>Port packaging</th><td>Compares port length to max B-pillar depth; suggests straight fit vs folded path.</td></tr>
             </table>
           </section>
 
@@ -656,7 +642,9 @@
             <table class="metric-table">
               <tr><th>Longest cabin dimension</th><td>Drives cabin onset frequency (typically floor-to-roof or longest interior axis).</td></tr>
               <tr><th>Include cabin</th><td>When unchecked, cabin gain, coupling, and in-car overlays are omitted — useful for outdoor or trunk-only builds.</td></tr>
-              <tr><th>Cabin volume</th><td>Total passenger volume — used for box/cabin ratio and coupling adjustment when cabin is included.</td></tr>
+              <tr><th>Total vehicle interior volume</th><td>Published passenger/cargo interior volume from specs — starting point before subtracting box and amp rack.</td></tr>
+              <tr><th>Amp rack volume</th><td>Displacement of amplifiers, processors, and related gear in the cabin (cu ft).</td></tr>
+              <tr><th>Effective cabin volume</th><td>Vehicle interior − built gross box − amp rack. Used for box/cabin ratio and door Helmholtz when cabin is included.</td></tr>
               <tr><th>Door tuning (experimental)</th><td>Door-jamb Helmholtz tuning: <strong>F_door</strong> from cabin volume, door mouth W×H, jamb thickness (+ end correction), and optional parasitic leak area when the cabin is not perfectly sealed. Chamber 3 shows jamb vs correction breakdown, leak/total vent area, closed cabin slope, and <strong>recommended jamb</strong> to match F2/Fb. Typical jamb 2–8 in; door mouth ~18–30 × 24–42 in. SPL door-open: align F_door to front tuning; musical: keep &gt;5 Hz separation.</td></tr>
               <tr><th>Cabin sealed / leakage</th><td>When door tuning is enabled: <strong>Perfectly sealed</strong> = 12 dB/oct closed-door cabin gain and zero parasitic vent. Unsealed cabins degrade closed slope by 0.2 dB/oct per sq in of estimated leak area (floor 3 dB/oct). Leak area adds to door mouth area for F_door when not sealed.</td></tr>
               <tr><th>Cabin Gain chart</th><td>Estimated low-frequency boost below onset — solid = doors closed, dashed = doors open.</td></tr>
@@ -669,7 +657,7 @@
             <h3>Build adjustments</h3>
             <table class="metric-table">
               <tr><th>Wall thickness</th><td>Default 1.5 in (2× 3/4" MDF). Subtracted from outer L×W×H on each axis when "measure from outer dims" is checked.</td></tr>
-              <tr><th>Baffle thickness</th><td>Internal divider between chambers (default 0.75 in). Each chamber loses half of (B-pillar max W × H × baffle thickness) in volume breakdown. Not applied for single-chamber ported designs.</td></tr>
+              <tr><th>Baffle thickness</th><td>Internal divider between chambers (default 0.75 in). Each chamber loses half of (largest gross W × H × baffle thickness) when gross L×W×H is entered. Zero baffle displacement in net-only mode. Not applied for single-chamber ported designs.</td></tr>
             </table>
           </section>
 

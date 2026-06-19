@@ -180,7 +180,7 @@ const netBreakdown = computeVolumeBreakdown({
 assertClose(netBreakdown.additionalBeyondNetCuFt, 0.35 + 0.1 + netBreakdown.bracingCuFt, 0.01, 'Net mode additional beyond net')
 assertClose(netBreakdown.requiredGrossCuFt, 2 + netBreakdown.additionalBeyondNetCuFt, 0.01, 'Net mode gross required')
 
-const totalBaffleCuFt = baffleDisplacementCuFt(58, 16, 0.75)
+const totalBaffleCuFt = baffleDisplacementCuFt(58 * 16, 0.75)
 const halfBaffleCuFt = totalBaffleCuFt / 2
 if (totalBaffleCuFt <= 0) {
   throw new Error('Baffle displacement should be positive for 58×16×0.75 in')
@@ -233,10 +233,7 @@ const seriesResult = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: { Fs: null, Qts: null, Qes: null, Vas: null, Sd: null },
   chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
   chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
@@ -247,6 +244,24 @@ if (seriesResult.summary.totalSdSqIn !== 250) {
 }
 assertClose(seriesResult.chambers.chamber1.portAreaPerCuFt, 11, 0.5, 'Series Ch.1 port area per cu ft')
 
+const effectiveCabin = runAll({
+  orderType: 'series',
+  vehicleInteriorCuFt: 100,
+  ampRackCuFt: 2,
+  driverSizeIn: 15,
+  driverCount: 2,
+  wallThicknessIn: 1.5,
+  cabinLengthIn: 120,
+  ts: {},
+  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
+})
+const expectedEffective = Math.max(
+  0,
+  100 - effectiveCabin.summary.totalGrossCuFt - 2
+)
+assertClose(effectiveCabin.summary.effectiveCabinCuFt, expectedEffective, 0.01, 'Effective cabin volume')
+
 const portSplitResult = runAll({
   orderType: 'series',
   port1FrontSharePct: 50,
@@ -254,10 +269,7 @@ const portSplitResult = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
   chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
@@ -284,10 +296,7 @@ const parallelIgnoreSplit = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
   chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
@@ -303,10 +312,7 @@ const noCabinResult = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: { Fs: null, Qts: null, Qes: null, Vas: null, Sd: null },
   chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
   chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
@@ -332,12 +338,15 @@ const baffleSeriesResult = runAll({
   wallThicknessIn: 1.5,
   baffleThicknessIn: 0.75,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 16,
-  maxWidthIn: 58,
+  vehicleInteriorCuFt: 80,
   ts: { Fs: null, Qts: null, Qes: null, Vas: null, Sd: null },
-  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber1: {
+    ...netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+    volumeBasis: 'grossDims',
+    grossWidthIn: 58,
+    grossHeightIn: 16,
+    grossLengthIn: 20
+  },
   chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
 })
 const b1 = baffleSeriesResult.volumeBreakdown?.chamber1
@@ -354,10 +363,7 @@ const rectSlotResult = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: netChamber({
     fbHz: 30,
@@ -383,10 +389,7 @@ const grossResult = runAll({
   driverCount: 2,
   wallThicknessIn: 1.5,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: {
     fbHz: 30,
@@ -438,10 +441,7 @@ const parallelResult = runAll({
   driverSizeIn: 15,
   driverCount: 1,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: netChamber({ fbHz: 28, volumeCuFt: 3.5, portAreaSqIn: 30 }),
   chamber2: netChamber({ fbHz: 52, volumeCuFt: 2.2, portAreaSqIn: 24 })
@@ -451,10 +451,7 @@ const openResult = runAll({
   orderType: 'parallel',
   doorsOpen: true,
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
-  maxDepthIn: 18,
-  maxHeightIn: 14,
-  maxWidthIn: 52,
+  vehicleInteriorCuFt: 80,
   ts: {},
   chamber1: netChamber({ fbHz: 28, volumeCuFt: 3.5, portAreaSqIn: 30 }),
   chamber2: netChamber({ fbHz: 52, volumeCuFt: 2.2, portAreaSqIn: 24 })
@@ -470,7 +467,7 @@ if (openResult.chambers.chamber2.cabinBoostDb >= parallelResult.chambers.chamber
 const portedResult = runAll({
   orderType: 'ported',
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
+  vehicleInteriorCuFt: 80,
   driverSizeIn: 15,
   driverCount: 2,
   ts: {},
@@ -491,7 +488,7 @@ if (portedResult.chambers.chamber2.volumeCuFt !== 0) {
 const fourthResult = runAll({
   orderType: 'fourth',
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
+  vehicleInteriorCuFt: 80,
   driverSizeIn: 15,
   driverCount: 2,
   ts: {},
@@ -544,7 +541,7 @@ if (!fightCompat.disclaimer) {
 const fourthTsResult = runAll({
   orderType: 'fourth',
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
+  vehicleInteriorCuFt: 80,
   driverSizeIn: 15,
   driverCount: 1,
   ts: { Fs: 30, Vas: 2, Qts: 0.4, VasUnit: 'cuft' },
@@ -594,7 +591,7 @@ if (!doorCoupling.coupled) {
 const doorEngineResult = runAll({
   orderType: 'series',
   cabinLengthIn: 120,
-  cabinVolumeCuFt: 80,
+  vehicleInteriorCuFt: 80,
   driverSizeIn: 15,
   driverCount: 2,
   doorTuningExperimental: true,

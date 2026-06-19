@@ -5,14 +5,12 @@ export const DESIGN_APP_ID = 'b-pillar-6th-order-calculator'
 export const DESIGN_TEXT_IDS = [
   'orderType',
   'cabinLength',
-  'cabinVolume',
+  'vehicleInteriorVolume',
+  'ampRackVolume',
   'doorWidth',
   'doorHeight',
   'doorJambThickness',
   'cabinLeakageArea',
-  'maxDepth',
-  'maxHeight',
-  'maxWidth',
   'wallThickness',
   'baffleThickness',
   'driverSize',
@@ -143,6 +141,17 @@ function migratePortStyleFields(fields, data) {
   })
 }
 
+/** Map legacy cabinVolume / B-pillar fields to current vehicle inputs. */
+function migrateVehicleVolumeFields(fields) {
+  if (fields.vehicleInteriorVolume == null && fields.cabinVolume != null) {
+    fields.vehicleInteriorVolume = fields.cabinVolume
+  }
+  delete fields.cabinVolume
+  delete fields.maxDepth
+  delete fields.maxHeight
+  delete fields.maxWidth
+}
+
 export function applyDesign(data, state) {
   if (!validateDesign(data)) {
     throw new Error('Invalid design file')
@@ -150,6 +159,7 @@ export function applyDesign(data, state) {
 
   migratePortFields(data.fields)
   migratePortStyleFields(data.fields, data)
+  migrateVehicleVolumeFields(data.fields)
 
   state.calcMode = data.calcMode || 'helmholtz'
   if (data.doorTuningExperimental !== undefined) {

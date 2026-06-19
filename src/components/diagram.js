@@ -33,7 +33,15 @@ function fmtDiagramArea(sqIn, areaUnit) {
   return `${sqIn.toFixed(0)} sq in`
 }
 
-function renderCabinZone({ includeCabin = true, cabinVolumeCuFt, doorTuning, volumeUnit, lengthUnit, areaUnit = 'sqin' }) {
+function renderCabinZone({
+  includeCabin = true,
+  effectiveCabinCuFt,
+  vehicleInteriorCuFt,
+  doorTuning,
+  volumeUnit,
+  lengthUnit,
+  areaUnit = 'sqin'
+}) {
   if (!includeCabin) {
     return `
   <rect x="${CABIN_X}" y="${BOX_Y - 8}" width="${CABIN_W}" height="${BOX_H + 16}" fill="rgba(148,163,184,0.06)" stroke="#475569" stroke-width="1" stroke-dasharray="8 4" rx="6"/>
@@ -47,6 +55,13 @@ function renderCabinZone({ includeCabin = true, cabinVolumeCuFt, doorTuning, vol
   const fmtVol = (v) => fmtDiagramVol(v, volumeUnit)
   const fmtLen = (v) => fmtDiagramLen(v, lengthUnit)
   const fmtArea = (sqIn) => fmtDiagramArea(sqIn, areaUnit)
+  const cabinVolLabel = effectiveCabinCuFt
+    ? `${fmtVol(effectiveCabinCuFt)} ${volLabel} effective`
+    : '— effective'
+  const vehicleSub =
+    vehicleInteriorCuFt && effectiveCabinCuFt != null
+      ? `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 54}" text-anchor="middle" fill="#64748b" font-size="9" font-family="Segoe UI, sans-serif">${fmtVol(vehicleInteriorCuFt)} ${volLabel} vehicle total</text>`
+      : ''
 
   const fill = doorActive ? 'rgba(251,191,36,0.1)' : 'rgba(148,163,184,0.06)'
   const stroke = doorActive ? '#fbbf24' : '#475569'
@@ -74,16 +89,18 @@ function renderCabinZone({ includeCabin = true, cabinVolumeCuFt, doorTuning, vol
   const labelBlock = doorActive
     ? `
   <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 24}" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600" font-family="Segoe UI, sans-serif">Ch. 3 — Cabin</text>
-  <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 40}" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${cabinVolumeCuFt ? `${fmtVol(cabinVolumeCuFt)} ${volLabel}` : '— volume'}</text>
+  <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 40}" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${cabinVolLabel}</text>
+  ${vehicleSub}
   ${
     doorValid
-      ? `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 54}" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600" font-family="Segoe UI, sans-serif">F_door ${doorTuning.hz.toFixed(1)} Hz</text>
-  <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 68}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Segoe UI, sans-serif">L_eff ${fmtLen(doorTuning.effectiveLengthIn)} ${lenLabel}</text>
-  ${doorTuning.leakAreaSqIn > 0 ? `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 82}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Segoe UI, sans-serif">+ leak ${fmtArea(doorTuning.leakAreaSqIn)}</text>` : ''}
-  ${doorTuning.coupled ? `<text x="${CABIN_X + CABIN_W / 2}" y="${coupledLabelY}" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="600" font-family="Segoe UI, sans-serif">Aligned to front tuning (±5 Hz)</text>` : ''}`
+      ? `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 68}" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600" font-family="Segoe UI, sans-serif">F_door ${doorTuning.hz.toFixed(1)} Hz</text>
+  <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 82}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Segoe UI, sans-serif">L_eff ${fmtLen(doorTuning.effectiveLengthIn)} ${lenLabel}</text>
+  ${doorTuning.leakAreaSqIn > 0 ? `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + 96}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Segoe UI, sans-serif">+ leak ${fmtArea(doorTuning.leakAreaSqIn)}</text>` : ''}
+  ${doorTuning.coupled ? `<text x="${CABIN_X + CABIN_W / 2}" y="${coupledLabelY + 14}" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="600" font-family="Segoe UI, sans-serif">Aligned to front tuning (±5 Hz)</text>` : ''}`
       : `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + BOX_H / 2}" text-anchor="middle" fill="#64748b" font-size="10" font-family="Segoe UI, sans-serif">Enter door dimensions</text>`
   }`
-    : `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + BOX_H / 2}" text-anchor="middle" fill="#64748b" font-size="14" font-family="Segoe UI, sans-serif" opacity="0.5">CABIN</text>`
+    : `<text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + BOX_H / 2 - 8}" text-anchor="middle" fill="#64748b" font-size="12" font-family="Segoe UI, sans-serif">${cabinVolLabel}</text>
+    ${vehicleSub}`
 
   return `
   <rect x="${CABIN_X}" y="${BOX_Y - 8}" width="${CABIN_W}" height="${BOX_H + 16}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" stroke-dasharray="${strokeDash}" rx="6"/>
@@ -107,26 +124,32 @@ function chamberWidthFromVolume(rearVol, frontVol) {
   return BOX_W * clamped
 }
 
+function cabinZoneProps(data) {
+  return {
+    includeCabin: data.includeCabin !== false,
+    effectiveCabinCuFt: data.effectiveCabinCuFt,
+    vehicleInteriorCuFt: data.vehicleInteriorCuFt,
+    doorTuning: data.doorTuningAnalysis,
+    volumeUnit: data.volumeUnit,
+    lengthUnit: data.lengthUnit
+  }
+}
+
 function renderPortedDiagram(container, data) {
-  const { chambers, packaging, maxDepthIn, maxWidthIn, maxHeightIn, volumeUnit, lengthUnit, cabinVolumeCuFt, doorTuningAnalysis } = data
+  const { chambers, volumeUnit, lengthUnit, doorTuningAnalysis } = data
   const c1 = chambers.chamber1
-  const pkg1 = packaging.chamber1Packaging
   const volLabel = volumeUnit === 'liters' ? 'L' : 'ft³'
   const lenLabel = lengthUnit === 'mm' ? 'mm' : 'in'
   const fmtLen = (v) => fmtDiagramLen(v, lengthUnit)
   const fmtVol = (v) => fmtDiagramVol(v, volumeUnit)
   const fmtArea = (sqIn) => fmtDiagramArea(sqIn, 'sqin')
-  const depthLimit = maxDepthIn || packaging.estimatedDepthIn || 18
-  const pFold = !pkg1.fitsStraight
-  const pPort = pFold
-    ? foldedPortGraphic(BOX_X + BOX_W - 90, BOX_Y + BOX_H - 28, 70, 40, '#60a5fa')
-    : straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#60a5fa', 'right')
+  const pPort = straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#60a5fa', 'right')
 
   container.innerHTML = `
 <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" role="img">
   ${defs()}
   <text x="${SVG_W / 2}" y="24" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="600" font-family="Segoe UI, sans-serif">Ported — single chamber vents to cabin</text>
-  ${renderCabinZone({ includeCabin: data.includeCabin !== false, cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
+  ${renderCabinZone(cabinZoneProps(data))}
   <rect x="${BOX_X}" y="${BOX_Y}" width="${BOX_W}" height="${BOX_H}" fill="#1a2332" stroke="#64748b" stroke-width="2" rx="4"/>
   <rect x="${BOX_X + 6}" y="${BOX_Y + 6}" width="${BOX_W - 12}" height="${BOX_H - 12}" fill="url(#rearGrad)" stroke="#60a5fa" stroke-width="1.5" rx="3"/>
   <text x="${BOX_X + BOX_W / 2}" y="${BOX_Y + 28}" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600" font-family="Segoe UI, sans-serif">Vented chamber</text>
@@ -143,9 +166,8 @@ function renderPortedDiagram(container, data) {
   <circle cx="${BOX_X + 36}" cy="${LEGEND_Y + 48}" r="10" fill="#60a5fa"/>
   <text x="${BOX_X + 36}" y="${LEGEND_Y + 52}" text-anchor="middle" fill="#0f172a" font-size="8" font-weight="700" font-family="Segoe UI, sans-serif">P</text>
   <text x="${BOX_X + 56}" y="${LEGEND_Y + 44}" fill="#e2e8f0" font-size="11" font-family="Segoe UI, sans-serif">${fmtLen(c1.portLengthIn)} ${lenLabel} · Fb ${c1.fbHz} Hz · External (0.732×r)</text>
-  <text x="${BOX_X + 56}" y="${LEGEND_Y + 60}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">→ Cabin${pFold ? ' · folded port suggested' : ''}</text>
+  <text x="${BOX_X + 56}" y="${LEGEND_Y + 60}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">→ Cabin</text>
   ${doorTuningLegend(LEGEND_Y, doorTuningAnalysis, fmtLen, fmtArea, lenLabel)}
-  <text x="${BOX_X + 34}" y="${LEGEND_Y + 92}" fill="#fbbf24" font-size="10" font-family="Segoe UI, sans-serif">Est. depth ${fmtLen(packaging.estimatedDepthIn)} ${lenLabel} / max ${fmtLen(depthLimit)} ${lenLabel}</text>
 </svg>`
 }
 
@@ -180,11 +202,9 @@ function renderSeriesDiagram(container, data) {
 }
 
 function renderLayout(container, data, config) {
-  const { chambers, packaging, maxDepthIn, maxWidthIn, maxHeightIn, volumeUnit, lengthUnit, orderType, cabinVolumeCuFt, doorTuningAnalysis } = data
+  const { chambers, volumeUnit, lengthUnit, orderType, doorTuningAnalysis } = data
   const c1 = chambers.chamber1
   const c2 = chambers.chamber2
-  const pkg1 = packaging.chamber1Packaging
-  const pkg2 = packaging.chamber2Packaging
 
   const rearW = chamberWidthFromVolume(c1.volumeCuFt, c2.volumeCuFt)
   const frontW = BOX_W - rearW
@@ -195,17 +215,13 @@ function renderLayout(container, data, config) {
   const fmtLen = (v) => fmtDiagramLen(v, lengthUnit)
   const fmtVol = (v) => fmtDiagramVol(v, volumeUnit)
   const fmtArea = (sqIn) => fmtDiagramArea(sqIn, 'sqin')
-  const depthLimit = maxDepthIn || packaging.estimatedDepthIn || 18
-
-  const p1Fold = !pkg1.fitsStraight
-  const p2Fold = !pkg2.fitsStraight
 
   container.innerHTML = `
 <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" role="img">
   ${defs()}
   <text x="${SVG_W / 2}" y="24" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="600" font-family="Segoe UI, sans-serif">${config.title}</text>
 
-  ${renderCabinZone({ includeCabin: data.includeCabin !== false, cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
+  ${renderCabinZone(cabinZoneProps(data))}
 
   <!-- Box wall -->
   <rect x="${BOX_X}" y="${BOX_Y}" width="${BOX_W}" height="${BOX_H}" fill="#1a2332" stroke="#64748b" stroke-width="2" rx="4"/>
@@ -213,13 +229,12 @@ function renderLayout(container, data, config) {
 
   ${chamberRects(BOX_X, BOX_Y, BOX_H, rearW, frontW, dividerX, c1, c2, fmtVol, volLabel, orderType)}
   ${driverOnDivider(dividerX, BOX_Y, BOX_H)}
-  ${renderPortRoutes(config, { dividerX, frontW, p1Fold, p2Fold, c1, c2 })}
+  ${renderPortRoutes(config, { dividerX, frontW, c1, c2 })}
   ${config.p1Route === 'fourthSealed' ? '' : portBadge(config.p1Route === 'seriesP1' ? dividerX + frontW * 0.35 : BOX_X + 28, BOX_Y + BOX_H / 2 - 6, 'P1', '#60a5fa')}
   ${portBadge(config.p2Route === 'parallelP2' ? BOX_X + BOX_W - 20 : BOX_X + BOX_W - 20, BOX_Y + 36, config.p1Route === 'fourthSealed' ? 'P' : 'P2', '#34d399')}
 
   ${legendPanel(LEGEND_Y, {
-    c1, c2, fmtLen, fmtVol, volLabel, lenLabel, config, p1Fold, p2Fold,
-    packaging, depthLimit, maxWidthIn, maxHeightIn, orderType, doorTuningAnalysis, fmtArea
+    c1, c2, fmtLen, fmtVol, volLabel, lenLabel, config, orderType, doorTuningAnalysis, fmtArea
   })}
 </svg>`
 }
@@ -272,20 +287,16 @@ function portBadge(x, y, label, color) {
 }
 
 function renderPortRoutes(config, ctx) {
-  const { dividerX, frontW, p1Fold, p2Fold } = ctx
+  const { dividerX, frontW } = ctx
   if (config.p1Route === 'fourthSealed') {
-    const p2Port = p2Fold
-      ? foldedPortGraphic(dividerX + frontW - 90, BOX_Y + BOX_H - 28, 70, 40, '#34d399')
-      : straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
+    const p2Port = straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
     return `
     <text x="${BOX_X + (dividerX - BOX_X) / 2}" y="${BOX_Y + BOX_H - 16}" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Segoe UI, sans-serif">SEALED</text>
     ${p2Port}
     <path d="M ${BOX_X + BOX_W - 10} ${BOX_Y + 50} L ${CABIN_X + 30} ${BOX_Y + 50}" stroke="#34d399" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#arrowGreen)" opacity="0.8"/>`
   }
   if (config.p1Route === 'seriesP1') {
-    const p2Port = p2Fold
-      ? foldedPortGraphic(dividerX + frontW - 90, BOX_Y + BOX_H - 28, 70, 40, '#34d399')
-      : straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
+    const p2Port = straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
     return `
     <rect x="${dividerX - 6}" y="${BOX_Y + BOX_H / 2 + 18}" width="${frontW * 0.5}" height="14" fill="#60a5fa" opacity="0.7" rx="3"/>
     <path d="M ${dividerX + frontW * 0.45} ${BOX_Y + BOX_H / 2 - 16} L ${dividerX + frontW - 24} ${BOX_Y + BOX_H / 2 - 16}"
@@ -293,12 +304,8 @@ function renderPortRoutes(config, ctx) {
     ${p2Port}
     <path d="M ${BOX_X + BOX_W - 10} ${BOX_Y + 50} L ${CABIN_X + 30} ${BOX_Y + 50}" stroke="#34d399" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#arrowGreen)" opacity="0.8"/>`
   }
-  const p1Port = p1Fold
-    ? foldedPortGraphic(BOX_X + 24, BOX_Y + BOX_H - 28, 70, 40, '#60a5fa')
-    : straightPortGraphic(BOX_X + 18, BOX_Y + 50, BOX_H - 70, '#60a5fa', 'left')
-  const p2Port = p2Fold
-    ? foldedPortGraphic(dividerX + frontW - 90, BOX_Y + BOX_H - 28, 70, 40, '#34d399')
-    : straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
+  const p1Port = straightPortGraphic(BOX_X + 18, BOX_Y + 50, BOX_H - 70, '#60a5fa', 'left')
+  const p2Port = straightPortGraphic(BOX_X + BOX_W - 22, BOX_Y + 44, BOX_H - 60, '#34d399', 'right')
   return `
   ${p1Port}
   <path d="M ${BOX_X + 24} ${BOX_Y + BOX_H / 2} L ${CABIN_X + 20} ${BOX_Y + BOX_H / 2}" stroke="#60a5fa" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#arrowBlue)" opacity="0.8"/>
@@ -321,26 +328,23 @@ function foldedPortGraphic(x, y, w, h, color) {
 
 function legendPanel(y, info) {
   const {
-    c1, c2, fmtLen, fmtVol, volLabel, lenLabel, config, p1Fold, p2Fold,
-    packaging, depthLimit, maxWidthIn, maxHeightIn, orderType, doorTuningAnalysis, fmtArea
+    c1, c2, fmtLen, fmtVol, volLabel, lenLabel, config, orderType, doorTuningAnalysis, fmtArea
   } = info
   const p1Type = orderType === 'series' ? 'Internal (0.614×r)' : orderType === 'fourth' ? 'Sealed rear' : 'External (0.732×r)'
   const p2Type = 'External (0.732×r)'
   const volRatio =
     c1.volumeCuFt > 0
-      ? orderType === 'fourth'
-        ? `Front:Rear vol ${(c2.volumeCuFt / c1.volumeCuFt).toFixed(1)}:1`
-        : `Front:Rear vol ${(c2.volumeCuFt / c1.volumeCuFt).toFixed(1)}:1`
+      ? `Front:Rear vol ${(c2.volumeCuFt / c1.volumeCuFt).toFixed(1)}:1`
       : ''
 
   const p1Legend = orderType === 'fourth'
     ? `<text x="${BOX_X + 56}" y="${y + 44}" fill="#e2e8f0" font-size="11" font-family="Segoe UI, sans-serif">Sealed · ${fmtVol(c1.volumeCuFt)} ${volLabel} net</text>
        <text x="${BOX_X + 56}" y="${y + 60}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${config.p1Dest}</text>`
     : `<text x="${BOX_X + 56}" y="${y + 44}" fill="#e2e8f0" font-size="11" font-family="Segoe UI, sans-serif">${fmtLen(c1.portLengthIn)} ${lenLabel} · Fb ${c1.fbHz} Hz · ${p1Type}</text>
-       <text x="${BOX_X + 56}" y="${y + 60}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${config.p1Dest}${p1Fold ? ' · folded port suggested' : ''}</text>`
+       <text x="${BOX_X + 56}" y="${y + 60}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${config.p1Dest}</text>`
 
   return `
-  <rect x="${BOX_X}" y="${y}" width="${SVG_W - BOX_X - 24}" height="170" fill="#1a2332" stroke="#334155" stroke-width="1" rx="6"/>
+  <rect x="${BOX_X}" y="${y}" width="${SVG_W - BOX_X - 24}" height="150" fill="#1a2332" stroke="#334155" stroke-width="1" rx="6"/>
   <text x="${BOX_X + 16}" y="${y + 22}" fill="#94a3b8" font-size="11" font-weight="600" font-family="Segoe UI, sans-serif">LEGEND</text>
 
   <circle cx="${BOX_X + 36}" cy="${y + 48}" r="10" fill="#60a5fa"/>
@@ -350,16 +354,11 @@ function legendPanel(y, info) {
   <circle cx="${BOX_X + 36}" cy="${y + 88}" r="10" fill="#34d399"/>
   <text x="${BOX_X + 36}" y="${y + 92}" text-anchor="middle" fill="#0f172a" font-size="8" font-weight="700" font-family="Segoe UI, sans-serif">${orderType === 'fourth' ? 'P' : 'P2'}</text>
   <text x="${BOX_X + 56}" y="${y + 84}" fill="#e2e8f0" font-size="11" font-family="Segoe UI, sans-serif">${fmtLen(c2.portLengthIn)} ${lenLabel} · Fb ${c2.fbHz} Hz · ${p2Type}</text>
-  <text x="${BOX_X + 56}" y="${y + 100}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${config.p2Dest}${p2Fold ? ' · folded port suggested' : ''}</text>
+  <text x="${BOX_X + 56}" y="${y + 100}" fill="#94a3b8" font-size="10" font-family="Segoe UI, sans-serif">${config.p2Dest}</text>
 
   ${doorTuningLegend(y, doorTuningAnalysis, fmtLen, fmtArea || ((sqIn) => `${sqIn.toFixed(0)} sq in`), lenLabel)}
 
   <line x1="${BOX_X + 16}" y1="${y + 118}" x2="${SVG_W - 40}" y2="${y + 118}" stroke="#334155" stroke-width="1"/>
 
-  <rect x="${BOX_X + 16}" y="${y + 128}" width="10" height="10" fill="#fbbf24" opacity="0.6" rx="1"/>
-  <text x="${BOX_X + 34}" y="${y + 137}" fill="#fbbf24" font-size="10" font-family="Segoe UI, sans-serif">
-    Est. depth ${fmtLen(packaging.estimatedDepthIn)} ${lenLabel} / max ${fmtLen(depthLimit)} ${lenLabel}
-  </text>
-  ${maxWidthIn ? `<text x="${BOX_X + 34}" y="${y + 154}" fill="#64748b" font-size="10" font-family="Segoe UI, sans-serif">Space: ${fmtLen(maxWidthIn)} ${lenLabel} W × ${fmtLen(maxHeightIn || 0)} ${lenLabel} H</text>` : ''}
-  <text x="${BOX_X + 480}" y="${y + 137}" fill="#64748b" font-size="10" font-family="Segoe UI, sans-serif">Rear net: ${fmtVol(c1.volumeCuFt)} ${volLabel} · Front net: ${fmtVol(c2.volumeCuFt)} ${volLabel}${volRatio ? ` · ${volRatio}` : ''}</text>`
+  <text x="${BOX_X + 34}" y="${y + 137}" fill="#64748b" font-size="10" font-family="Segoe UI, sans-serif">Rear net: ${fmtVol(c1.volumeCuFt)} ${volLabel} · Front net: ${fmtVol(c2.volumeCuFt)} ${volLabel}${volRatio ? ` · ${volRatio}` : ''}</text>`
 }

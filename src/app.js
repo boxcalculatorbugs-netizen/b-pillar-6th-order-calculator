@@ -164,10 +164,8 @@ function readInputs() {
     isCabinSealed: $('cabinSealed')?.checked ?? false,
     cabinLeakageAreaSqIn: toSqIn(num('cabinLeakageArea')) || 15,
     cabinLengthIn: toInches(num('cabinLength')),
-    cabinVolumeCuFt: toCuFt(num('cabinVolume')),
-    maxDepthIn: toInches(num('maxDepth')),
-    maxHeightIn: toInches(num('maxHeight')),
-    maxWidthIn: toInches(num('maxWidth')),
+    vehicleInteriorCuFt: toCuFt(num('vehicleInteriorVolume')),
+    ampRackCuFt: toCuFt(num('ampRackVolume')),
     wallThicknessIn: toInches(num('wallThickness')) || 1.5,
     baffleThicknessIn: toInches(num('baffleThickness')),
     driverSizeIn: num('driverSize'),
@@ -293,7 +291,7 @@ function renderSummary(result) {
     ${cabinBoostCard}
     <div class="summary-card"><div class="label">Total net vol</div><div class="value">${fmtVol(summary.totalNetCuFt)}</div></div>
     <div class="summary-card"><div class="label">Total gross vol</div><div class="value">${fmtVol(summary.totalGrossCuFt)}</div></div>
-    <div class="summary-card"><div class="label">Est. wall depth</div><div class="value">${summary.estimatedDepthIn ? fmtLen(summary.estimatedDepthIn) : '—'}</div></div>
+    ${includeCabin !== false ? `<div class="summary-card"><div class="label">Effective cabin</div><div class="value">${summary.effectiveCabinCuFt ? fmtVol(summary.effectiveCabinCuFt) : '—'}</div>${summary.vehicleInteriorCuFt ? `<div class="summary-sub">${fmtVol(summary.vehicleInteriorCuFt)} total − ${fmtVol(summary.totalGrossCuFt)} box − ${fmtVol(summary.ampRackCuFt || 0)} amp</div>` : ''}</div>` : ''}
     <div class="summary-card"><div class="label">System Sd</div><div class="value">${summary.totalSdSqIn ? `${summary.totalSdSqIn} sq in` : '—'}</div><div class="summary-sub">${summary.driverCount || 1}× ${summary.driverSizeIn || '—'}"</div></div>
   `
 }
@@ -558,17 +556,19 @@ function renderChamber3Results(result) {
 }
 
 function renderCabinResults(result) {
-  const { volumeCoupling, packaging, driverDisplacementCuFt, includeCabin } = result
+  const { volumeCoupling, packaging, driverDisplacementCuFt, includeCabin, summary } = result
   const ratioRow = includeCabin !== false
-    ? `<div class="result-row"><span>Box / cabin ratio</span><span class="val">${(volumeCoupling.boxRatio * 100).toFixed(1)}%</span></div>`
+    ? `<div class="result-row"><span>Box / effective cabin</span><span class="val">${(volumeCoupling.boxRatio * 100).toFixed(1)}%</span></div>`
+    : ''
+  const effectiveRow = includeCabin !== false && summary?.effectiveCabinCuFt
+    ? `<div class="result-row"><span>Effective cabin volume</span><span class="val">${fmtVol(summary.effectiveCabinCuFt)}</span></div>`
     : ''
   $('cabinResults').innerHTML = `
+    ${effectiveRow}
     ${ratioRow}
     <div class="result-row"><span>Driver displacement</span><span class="val">${driverDisplacementCuFt ? fmtVol(driverDisplacementCuFt) : '—'}</span></div>
     <div class="result-row"><span>Ch.1 gross volume</span><span class="val">${fmtVol(packaging.grossVolume1CuFt)}</span></div>
     <div class="result-row"><span>Ch.2 gross volume</span><span class="val">${fmtVol(packaging.grossVolume2CuFt)}</span></div>
-    <div class="result-row"><span>Ch.1 port packaging</span><span class="val">${packaging.chamber1Packaging.fitsStraight ? 'Straight fit' : `${packaging.chamber1Packaging.foldCount}-fold`}</span></div>
-    <div class="result-row"><span>Ch.2 port packaging</span><span class="val">${packaging.chamber2Packaging.fitsStraight ? 'Straight fit' : `${packaging.chamber2Packaging.foldCount}-fold`}</span></div>
   `
 }
 
@@ -835,12 +835,10 @@ function recalculate() {
     orderType: result.orderType,
     chambers: result.chambers,
     packaging: result.packaging,
-    maxDepthIn: inputs.maxDepthIn,
-    maxWidthIn: inputs.maxWidthIn,
-    maxHeightIn: inputs.maxHeightIn,
     volumeUnit: state.volumeUnit,
     lengthUnit: state.lengthUnit,
-    cabinVolumeCuFt: inputs.cabinVolumeCuFt,
+    effectiveCabinCuFt: result.effectiveCabinCuFt,
+    vehicleInteriorCuFt: result.vehicleInteriorCuFt,
     includeCabin: result.includeCabin,
     doorTuningAnalysis: result.doorTuningAnalysis
   })
@@ -848,6 +846,7 @@ function recalculate() {
   updateChartTabs(result)
   updateCharts(result)
   syncPort1DispCalc(result)
+  syncEffectiveCabinReadout(result)
   syncComputedFbFields(result)
   updateNetVolPerSubReadouts(result.driverArray.count)
 }
@@ -966,6 +965,24 @@ function updatePort1FrontShareLabel() {
   if (!el || !slider) return
   const front = parseInt(slider.value, 10) || 0
   el.textContent = `${front}% front · ${100 - front}% rear`
+}
+
+function syncEffectiveCabinReadout(result) {
+  const el = $('effectiveCabinReadout')
+  if (!el) return
+  if (result.includeCabin === false) {
+    el.textContent = 'Effective cabin: excluded from calculations'
+    return
+  }
+  const total = result.summary?.vehicleInteriorCuFt
+  const box = result.summary?.totalGrossCuFt
+  const amp = result.summary?.ampRackCuFt || 0
+  const effective = result.summary?.effectiveCabinCuFt
+  if (!total || total <= 0) {
+    el.textContent = 'Effective cabin: enter total vehicle interior volume'
+    return
+  }
+  el.textContent = `Effective cabin: ${fmtVol(total)} total − ${fmtVol(box)} box − ${fmtVol(amp)} amp rack = ${fmtVol(effective)}`
 }
 
 function syncPort1DispCalc(result) {
@@ -1315,8 +1332,7 @@ function setupTabs() {
 
 function bindEvents() {
   const inputIds = [
-    'cabinLength', 'cabinVolume', 'doorWidth', 'doorHeight', 'doorJambThickness', 'cabinLeakageArea',
-    'maxDepth', 'maxHeight', 'maxWidth',
+    'cabinLength', 'vehicleInteriorVolume', 'ampRackVolume', 'doorWidth', 'doorHeight', 'doorJambThickness', 'cabinLeakageArea',
     'wallThickness', 'baffleThickness',
     'driverSize', 'driverCount',
     'tsFs', 'tsQts', 'tsQes', 'tsVas', 'tsSd', 'tsRe', 'tsXmax', 'tsPe', 'tsVd',
@@ -1372,7 +1388,7 @@ function bindEvents() {
   $('volumeUnit').addEventListener('change', (e) => {
     const prevUnit = state.volumeUnit
     state.volumeUnit = e.target.value
-    const volFields = ['cabinVolume', 'vb1', 'vb2', 'vb1Gross', 'vb2Gross']
+    const volFields = ['vehicleInteriorVolume', 'ampRackVolume', 'vb1', 'vb2', 'vb1Gross', 'vb2Gross']
     volFields.forEach((id) => {
       const raw = num(id)
       if (raw > 0) {

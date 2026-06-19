@@ -13,7 +13,8 @@ const sampleDesign = {
   fields: {
     orderType: 'series',
     cabinLength: '120',
-    cabinVolume: '80',
+    vehicleInteriorVolume: '80',
+    ampRackVolume: '0',
     fb1: '25',
     vb1: '10',
     fb2: '60',

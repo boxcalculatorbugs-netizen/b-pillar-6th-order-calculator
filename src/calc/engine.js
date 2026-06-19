@@ -23,10 +23,10 @@ import {
   hasTsParams
 } from './tsModel.js'
 import { analyzeChamberExcursion } from './excursion.js'
-import { analyzePackaging } from './packaging.js'
+import { estimateGrossVolumes, computeEffectiveCabinCuFt } from './packaging.js'
 import { estimateInCarResponse, getMarkerFrequencies, estimateBandwidth } from './response.js'
 import { calculateDriverArray, getPortRatioWarnings } from './driverArray.js'
-import { computeVolumeBreakdown, baffleDisplacementCuFt, DEFAULT_WALL_THICKNESS_IN } from './volumeAccounting.js'
+import { computeVolumeBreakdown, baffleDisplacementCuFt, baffleFaceSqInFromChambers, DEFAULT_WALL_THICKNESS_IN } from './volumeAccounting.js'
 import { round, clamp } from './constants.js'
 import { isFourth, isPorted, primaryTuningFb } from './orderTypes.js'
 import { analyzeFourthOrderCompatibility } from './fourthOrder.js'
@@ -230,10 +230,8 @@ export function runAll(inputs) {
     driverSizeIn,
     driverCount,
     cabinLengthIn,
-    cabinVolumeCuFt,
-    maxDepthIn,
-    maxHeightIn,
-    maxWidthIn,
+    vehicleInteriorCuFt,
+    ampRackCuFt = 0,
     wallThicknessIn = DEFAULT_WALL_THICKNESS_IN,
     baffleThicknessIn = 0,
     ts,
@@ -256,7 +254,10 @@ export function runAll(inputs) {
 
   const totalBaffleCuFt = isPorted(orderType)
     ? 0
-    : baffleDisplacementCuFt(maxWidthIn, maxHeightIn, baffleThicknessIn)
+    : baffleDisplacementCuFt(
+        baffleFaceSqInFromChambers(chamber1, chamber2),
+        baffleThicknessIn
+      )
   const build = {
     wallThicknessIn,
     bracingPercent: 0,
@@ -344,9 +345,23 @@ export function runAll(inputs) {
       ? calculateCabinGain(cabinLengthIn, fb1, false, cabinLeakage)
       : cabin2Closed
 
+  const packaging = estimateGrossVolumes(
+    orderType,
+    netVol1,
+    isFourth(orderType) ? 0 : port1.portVolumeCuFt,
+    netVol2,
+    isPorted(orderType) ? 0 : port2.portVolumeCuFt,
+    driverDisplacement
+  )
+  const effectiveCabinCuFt = computeEffectiveCabinCuFt(
+    vehicleInteriorCuFt,
+    packaging.totalGrossCuFt,
+    ampRackCuFt
+  )
+
   const volumeCoupling = includeCabin
     ? calculateCabinVolumeCoupling(
-        cabinVolumeCuFt,
+        effectiveCabinCuFt,
         netVol1,
         isPorted(orderType) ? 0 : netVol2,
         externalFb,
@@ -463,14 +478,6 @@ export function runAll(inputs) {
     }
   }
 
-  const packaging = analyzePackaging(
-    { maxDepthIn, maxHeightIn, maxWidthIn },
-    chambers,
-    driverDisplacement,
-    build,
-    orderType
-  )
-
   const sensitivity = { enabled: false, tolerancePercent: 0, volumeSweep: null, portAreaSweep: null, callouts: [] }
 
   let fourthOrderAnalysis = null
@@ -491,7 +498,7 @@ export function runAll(inputs) {
   const frontTuningLabel = isPorted(orderType) ? 'Fb' : isFourth(orderType) ? 'F2' : 'Fb2'
   const doorTuningAnalysis = analyzeDoorTuning({
     enabled: doorTuningExperimental,
-    cabinVolCuFt: cabinVolumeCuFt,
+    cabinVolCuFt: effectiveCabinCuFt,
     doorWidthIn,
     doorHeightIn,
     jambThicknessIn: doorJambThicknessIn,
@@ -591,6 +598,9 @@ export function runAll(inputs) {
     fhHz: fh,
     cabinOnsetHz: cabinExternalClosed.onsetFreqHz,
     volumeCoupling,
+    vehicleInteriorCuFt: round(vehicleInteriorCuFt || 0, 2),
+    ampRackCuFt: round(ampRackCuFt || 0, 2),
+    effectiveCabinCuFt: round(effectiveCabinCuFt, 2),
     tsSuitability,
     tsSuggestions,
     driverDisplacementCuFt: driverDisplacement,
@@ -616,7 +626,9 @@ export function runAll(inputs) {
         3
       ),
       totalGrossCuFt: round(packaging.totalGrossCuFt, 2),
-      estimatedDepthIn: round(packaging.estimatedDepthIn, 1),
+      vehicleInteriorCuFt: round(vehicleInteriorCuFt || 0, 2),
+      ampRackCuFt: round(ampRackCuFt || 0, 2),
+      effectiveCabinCuFt: round(effectiveCabinCuFt, 2),
       hasTs: hasTsParams(ts),
       cabinBoostFb2Closed: externalCabinClosed,
       cabinBoostFb2Open: externalCabinOpen,

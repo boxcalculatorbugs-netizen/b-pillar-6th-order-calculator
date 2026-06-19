@@ -5,10 +5,17 @@ export const DEFAULT_BAFFLE_THICKNESS_IN = 0.75
 export const DEFAULT_PORT_WALL_THICKNESS_IN = 0.75
 export const DEFAULT_BRACING_PERCENT = 15
 
-/** Internal chamber divider at full B-pillar cross-section (W × H × thickness). */
-export function baffleDisplacementCuFt(maxWidthIn, maxHeightIn, baffleThicknessIn) {
-  if (!maxWidthIn || !maxHeightIn || !baffleThicknessIn || baffleThicknessIn <= 0) return 0
-  return (maxWidthIn * maxHeightIn * baffleThicknessIn) / CU_FT_TO_CU_IN
+/** Largest gross W×H face across chambers (for internal baffle displacement). */
+export function baffleFaceSqInFromChambers(chamber1, chamber2) {
+  const faces = [chamber1, chamber2]
+    .filter((c) => c?.volumeBasis === 'grossDims' && c.grossWidthIn > 0 && c.grossHeightIn > 0)
+    .map((c) => c.grossWidthIn * c.grossHeightIn)
+  return faces.length ? Math.max(...faces) : 0
+}
+
+export function baffleDisplacementCuFt(faceSqIn, baffleThicknessIn) {
+  if (!faceSqIn || !baffleThicknessIn || baffleThicknessIn <= 0) return 0
+  return (faceSqIn * baffleThicknessIn) / CU_FT_TO_CU_IN
 }
 
 /** Outer L×W×H → internal airspace before displacements */

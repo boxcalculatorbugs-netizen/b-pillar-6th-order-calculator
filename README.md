@@ -38,14 +38,13 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 - **Optional cabin** — include or exclude cabin gain, coupling, and in-car overlays
 - **Driver array** — sub size/count with auto Sd and port:Sd ratio warnings
 - **Cabin gain** — 12 dB/oct closed, 3 dB/oct open; dual curves on charts
-- **B-pillar packaging**, T/S modeling, SVG diagram, passband estimates
+- **Effective cabin volume** — vehicle interior minus built gross box and amp rack displacement
 
 ## Input Guide
 
 | Section | Purpose |
 |---------|---------|
-| **Vehicle / Cabin** | Longest interior dimension, cabin volume, include cabin toggle, doors open |
-| **B-Pillar Space** | Max depth, height, width for the wall |
+| **Vehicle / Cabin** | Longest interior dimension, total vehicle volume, amp rack volume, effective cabin (computed), include cabin toggle, doors open |
 | **Build Adjustments** | Wall thickness, baffle thickness |
 | **Driver Array** | Sub size and count → auto cone area (Sd) |
 | **Chamber 1 / 2** | Fb, volume basis, port mode (area / diameter / slot) |
