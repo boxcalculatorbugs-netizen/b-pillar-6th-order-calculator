@@ -1,6 +1,7 @@
 import { runAll } from './calc/engine.js'
 import { getTsSuggestions } from './calc/tsModel.js'
 import { portAreaFromSlot, isLengthAdjustMode, calcModeLabel, formatEndCorrectionSummary, CALC_MODES, PORT_STYLE_MODES } from './calc/port.js'
+import { DEFAULT_PORT_WALL_THICKNESS_IN } from './calc/volumeAccounting.js'
 import { applyStartupPreset } from './presets.js'
 import {
   exportDesign,
@@ -67,7 +68,6 @@ const $ = (id) => document.getElementById(id)
 
 let cabinChart = null
 let passbandChart = null
-let sensitivityChart = null
 let debounceTimer = null
 
 const state = {
@@ -117,6 +117,16 @@ function fromSqIn(value) {
   return state.areaUnit === 'sqcm' ? value * 6.4516 : value
 }
 
+function resolvePortWallIn(ch) {
+  const raw = $(`port${ch}Wall`)?.value?.trim()
+  if (raw !== '') {
+    const v = parseFloat(raw)
+    if (Number.isFinite(v)) return toInches(v)
+  }
+  const global = num('portThickness')
+  return global > 0 ? toInches(global) : DEFAULT_PORT_WALL_THICKNESS_IN
+}
+
 function readChamber(ch) {
   const basis = $(`vb${ch}Basis`).value || 'net'
   const mode = $(`port${ch}Mode`).value
@@ -135,7 +145,7 @@ function readChamber(ch) {
     portDiameterIn: toInches(num(`port${ch}Diam`)),
     portSlotWidthIn: toInches(num(`port${ch}SlotW`)),
     portSlotHeightIn: toInches(num(`port${ch}SlotH`)),
-    portWallThicknessIn: toInches(num(`port${ch}Wall`)) || 0.75,
+    portWallThicknessIn: resolvePortWallIn(ch),
     portLengthOverrideIn: toInches(num(`port${ch}Length`)),
     portStyleMode: mode === 'slot' ? PORT_STYLE_MODES.RECT_SLOT : PORT_STYLE_MODES.ROUND_AERO,
     commonWalls: parseInt($(`port${ch}CommonWalls`)?.value ?? '0', 10) || 0
@@ -145,6 +155,7 @@ function readChamber(ch) {
 function readInputs() {
   return {
     orderType: $('orderType').value,
+    includeCabin: $('includeCabin').checked,
     doorsOpen: $('doorsOpen').checked,
     calcMode: state.calcMode,
     doorTuningExperimental: state.doorTuningExperimental,
@@ -159,12 +170,8 @@ function readInputs() {
     maxHeightIn: toInches(num('maxHeight')),
     maxWidthIn: toInches(num('maxWidth')),
     wallThicknessIn: toInches(num('wallThickness')) || 1.5,
-    bracingEnabled: $('bracingEnabled').checked,
-    bracingPercent: $('bracingEnabled').checked
-      ? (parseFloat($('bracingPercent').value) || 15)
-      : 0,
-    toleranceEnabled: $('toleranceEnabled').checked,
-    tolerancePercent: parseFloat($('tolerancePercent').value) || 10,
+    baffleThicknessIn: toInches(num('baffleThickness')),
+    portThicknessIn: toInches(num('portThickness')) || DEFAULT_PORT_WALL_THICKNESS_IN,
     driverSizeIn: num('driverSize'),
     driverCount: Math.max(1, parseInt($('driverCount').value, 10) || 1),
     ts: {
@@ -247,7 +254,7 @@ function frequencyMarkerPlugin(markers, freqLabels) {
 }
 
 function renderSummary(result) {
-  const { summary, passbandBandwidth, orderType, doorsOpen } = result
+  const { summary, passbandBandwidth, orderType, doorsOpen, includeCabin } = result
   const bwLow = passbandBandwidth?.lowHz ?? summary.passbandLowHz
   const bwHigh = passbandBandwidth?.highHz ?? summary.passbandHighHz
   const octaveSpread = passbandBandwidth?.octaveSpread ?? summary.passbandOctaves
@@ -276,12 +283,15 @@ function renderSummary(result) {
     result.doorTuningAnalysis?.valid
       ? `<div class="summary-card"><div class="label">Door jamb (F_door)</div><div class="value">${result.doorTuningAnalysis.hz.toFixed(1)} Hz</div>${result.doorTuningAnalysis.coupled ? '<div class="summary-sub port-ratio-amber">Aligned to front tuning</div>' : result.doorTuningAnalysis.recommendedJambForFront != null && result.doorTuningAnalysis.frontTuningHz ? `<div class="summary-sub">Jamb for F2: ~${result.doorTuningAnalysis.recommendedJambForFront.toFixed(1)} in</div>` : ''}</div>`
       : ''
+  const cabinBoostCard = includeCabin !== false
+    ? `<div class="summary-card"><div class="label">${cabinBoostLabel}</div><div class="value">+${summary.cabinBoostFb2Active?.toFixed(1) ?? '—'} dB</div><div class="summary-sub">${activeLabel}: +${summary.cabinBoostFb2Active?.toFixed(1) ?? '—'} · closed: +${boostClosed} · open: +${boostOpen}</div></div>`
+    : ''
   $('summaryCards').innerHTML = `
     <div class="summary-card"><div class="label">Order type</div><div class="value">${orderLabel}</div></div>
     ${fourthSummaryCards}
     ${doorSummaryCard}
     <div class="summary-card"><div class="label">Est. bandwidth</div><div class="value">${bwValue}</div>${bwSub ? `<div class="summary-sub">${bwSub}</div>` : ''}</div>
-    <div class="summary-card"><div class="label">${cabinBoostLabel}</div><div class="value">+${summary.cabinBoostFb2Active?.toFixed(1) ?? '—'} dB</div><div class="summary-sub">${activeLabel}: +${summary.cabinBoostFb2Active?.toFixed(1) ?? '—'} · closed: +${boostClosed} · open: +${boostOpen}</div></div>
+    ${cabinBoostCard}
     <div class="summary-card"><div class="label">Total net vol</div><div class="value">${fmtVol(summary.totalNetCuFt)}</div></div>
     <div class="summary-card"><div class="label">Total gross vol</div><div class="value">${fmtVol(summary.totalGrossCuFt)}</div></div>
     <div class="summary-card"><div class="label">Est. wall depth</div><div class="value">${summary.estimatedDepthIn ? fmtLen(summary.estimatedDepthIn) : '—'}</div></div>
@@ -301,7 +311,7 @@ function renderDriverSdInfo(driverArray) {
   el.innerHTML = `<strong>${driverArray.count}× ${driverArray.sizeIn}"</strong> — ${driverArray.singleSdSqIn.toFixed(1)} sq in per driver · <strong>${driverArray.totalSdSqIn.toFixed(1)} sq in total Sd</strong> (${stdNote})`
 }
 
-function renderChamberResults(elId, chamber, excursionInfo, orderType, portRatio, driverCount, fourthAnalysis = null) {
+function renderChamberResults(elId, chamber, excursionInfo, orderType, portRatio, driverCount, fourthAnalysis = null, includeCabin = true) {
   const vel = excursionInfo?.velocityMps
   const isSeries = orderType === 'series'
   const isSealed = chamber.portRole === 'sealed' || chamber.isSealed
@@ -314,8 +324,10 @@ function renderChamberResults(elId, chamber, excursionInfo, orderType, portRatio
       ? `<div class="result-row"><span>Fcb (sealed rear)</span><span class="val">${fourthAnalysis.fcbHz.toFixed(1)} Hz</span></div>
          <div class="result-row"><span>Qtc</span><span class="val">${fourthAnalysis.qtc.toFixed(3)}</span></div>`
       : ''
-  const cabinBoostRow = chamber.portRole === 'internal' || isSealed
-    ? `<div class="result-row"><span>Cabin boost @ Fb</span><span class="val muted-val">N/A (${isSealed ? 'sealed' : 'internal'})</span></div>`
+  const cabinBoostRow = !includeCabin || chamber.portRole === 'internal' || isSealed
+    ? includeCabin === false
+      ? ''
+      : `<div class="result-row"><span>Cabin boost @ Fb</span><span class="val muted-val">N/A (${isSealed ? 'sealed' : 'internal'})</span></div>`
     : `<div class="result-row"><span>Cabin boost @ Fb</span><span class="val">+${chamber.cabinBoostDb.toFixed(1)} dB active</span></div>
        <div class="result-row"><span>Closed / open</span><span class="val muted-val">+${chamber.cabinBoostClosedDb.toFixed(1)} dB / +${chamber.cabinBoostOpenDb.toFixed(1)} dB</span></div>`
   const lengthNote = chamber.lengthOverridden
@@ -385,7 +397,7 @@ function renderVolumeBreakdown(result) {
         ${row('Your net airspace', b1.enteredNetCuFt, b2?.enteredNetCuFt)}
         ${row('+ Port displacement', b1.portCuFt, b2?.portCuFt)}
         ${row('+ Driver', b1.driverCuFt, b2?.driverCuFt)}
-        ${row('+ Bracing', b1.bracingCuFt, b2?.bracingCuFt)}
+        ${b1.baffleCuFt || b2?.baffleCuFt ? row('+ Baffle panel', b1.baffleCuFt, b2?.baffleCuFt) : ''}
         ${row('+ Other', b1.extraCuFt, b2?.extraCuFt)}
         ${row('<strong>= Built gross needed</strong>', b1.requiredGrossCuFt, b2?.requiredGrossCuFt)}
     `
@@ -395,7 +407,7 @@ function renderVolumeBreakdown(result) {
         ${b1.wallLossCuFt || b2?.wallLossCuFt ? row('− Wall panel loss', b1.wallLossCuFt, b2?.wallLossCuFt) : ''}
         ${row('− Port', b1.portCuFt, b2?.portCuFt)}
         ${row('− Driver', b1.driverCuFt, b2?.driverCuFt)}
-        ${row('− Bracing', b1.bracingCuFt, b2?.bracingCuFt)}
+        ${b1.baffleCuFt || b2?.baffleCuFt ? row('− Baffle panel', b1.baffleCuFt, b2?.baffleCuFt) : ''}
         ${row('− Other', b1.extraCuFt, b2?.extraCuFt)}
         ${row('<strong>= Effective net</strong>', b1.effectiveNetCuFt, b2?.effectiveNetCuFt)}
     `
@@ -542,9 +554,12 @@ function renderChamber3Results(result) {
 }
 
 function renderCabinResults(result) {
-  const { volumeCoupling, packaging, driverDisplacementCuFt } = result
+  const { volumeCoupling, packaging, driverDisplacementCuFt, includeCabin } = result
+  const ratioRow = includeCabin !== false
+    ? `<div class="result-row"><span>Box / cabin ratio</span><span class="val">${(volumeCoupling.boxRatio * 100).toFixed(1)}%</span></div>`
+    : ''
   $('cabinResults').innerHTML = `
-    <div class="result-row"><span>Box / cabin ratio</span><span class="val">${(volumeCoupling.boxRatio * 100).toFixed(1)}%</span></div>
+    ${ratioRow}
     <div class="result-row"><span>Driver displacement</span><span class="val">${driverDisplacementCuFt ? fmtVol(driverDisplacementCuFt) : '—'}</span></div>
     <div class="result-row"><span>Ch.1 gross volume</span><span class="val">${fmtVol(packaging.grossVolume1CuFt)}</span></div>
     <div class="result-row"><span>Ch.2 gross volume</span><span class="val">${fmtVol(packaging.grossVolume2CuFt)}</span></div>
@@ -572,180 +587,107 @@ function renderTsSuitability(suitability) {
   el.innerHTML = `${suitability.verdict}${score}${notes}`
 }
 
-function updateCharts(result) {
-  const { charts, doorsOpen } = result
-  const labels = charts.cabinCurveClosed.map((p) => p.freq.toFixed(1))
+function updateChartTabs(result) {
+  const includeCabin = result.includeCabin !== false
+  const cabinTab = document.querySelector('.tab[data-tab="cabin"]')
+  const cabinPanel = $('tabCabin')
+  if (cabinTab) cabinTab.hidden = !includeCabin
+  if (cabinPanel) cabinPanel.hidden = !includeCabin
+  if (!includeCabin) {
+    const activeTab = document.querySelector('.tab.active')
+    if (activeTab?.dataset.tab === 'cabin') {
+      document.querySelector('.tab[data-tab="diagram"]')?.click()
+    }
+  }
+}
 
-  if (cabinChart) cabinChart.destroy()
-  cabinChart = new Chart($('cabinChart'), {
-    type: 'line',
-    plugins: [frequencyMarkerPlugin(charts.markers, labels)],
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Doors closed (12 dB/oct)',
-          data: charts.cabinCurveClosed.map((p) => p.dbBoost),
-          borderColor: '#fbbf24',
-          backgroundColor: 'rgba(251, 191, 36, 0.08)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: doorsOpen ? 1.5 : 2.5
-        },
-        {
-          label: 'Doors open (3 dB/oct)',
-          data: charts.cabinCurveOpen.map((p) => p.dbBoost),
-          borderColor: '#fb923c',
-          borderDash: [6, 4],
-          fill: false,
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: doorsOpen ? 2.5 : 1.5
-        }
-      ]
-    },
-    options: chartOptions('Cabin Transfer Estimate', 'Boost (dB)', charts.markers)
-  })
+function updateCharts(result) {
+  const { charts, doorsOpen, includeCabin } = result
+  const showCabin = includeCabin !== false && charts.cabinCurveClosed.length > 0
+
+  if (showCabin) {
+    const labels = charts.cabinCurveClosed.map((p) => p.freq.toFixed(1))
+
+    if (cabinChart) cabinChart.destroy()
+    cabinChart = new Chart($('cabinChart'), {
+      type: 'line',
+      plugins: [frequencyMarkerPlugin(charts.markers, labels)],
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Doors closed (12 dB/oct)',
+            data: charts.cabinCurveClosed.map((p) => p.dbBoost),
+            borderColor: '#fbbf24',
+            backgroundColor: 'rgba(251, 191, 36, 0.08)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            borderWidth: doorsOpen ? 1.5 : 2.5
+          },
+          {
+            label: 'Doors open (3 dB/oct)',
+            data: charts.cabinCurveOpen.map((p) => p.dbBoost),
+            borderColor: '#fb923c',
+            borderDash: [6, 4],
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0,
+            borderWidth: doorsOpen ? 2.5 : 1.5
+          }
+        ]
+      },
+      options: chartOptions('Cabin Transfer Estimate', 'Boost (dB)', charts.markers)
+    })
+  } else if (cabinChart) {
+    cabinChart.destroy()
+    cabinChart = null
+  }
 
   if (passbandChart) passbandChart.destroy()
   const passbandLabels = charts.inCarResponseClosed.map((p) => p.freq.toFixed(1))
+  const passbandDatasets = [
+    {
+      label: 'Passband estimate (dB)',
+      data: charts.inCarResponseClosed.map((p) => p.passbandDb),
+      borderColor: '#60a5fa',
+      tension: 0.3,
+      pointRadius: 0
+    }
+  ]
+  if (showCabin) {
+    passbandDatasets.push(
+      {
+        label: 'In-car — doors closed',
+        data: charts.inCarResponseClosed.map((p) => p.inCarDb),
+        borderColor: '#34d399',
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: doorsOpen ? 1.5 : 2.5
+      },
+      {
+        label: 'In-car — doors open',
+        data: charts.inCarResponseOpen.map((p) => p.inCarDb),
+        borderColor: '#2dd4bf',
+        borderDash: [6, 4],
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: doorsOpen ? 2.5 : 1.5
+      }
+    )
+  }
   passbandChart = new Chart($('passbandChart'), {
     type: 'line',
     plugins: [frequencyMarkerPlugin(charts.markers, passbandLabels)],
     data: {
       labels: passbandLabels,
-      datasets: [
-        {
-          label: 'Passband estimate (dB)',
-          data: charts.inCarResponseClosed.map((p) => p.passbandDb),
-          borderColor: '#60a5fa',
-          tension: 0.3,
-          pointRadius: 0
-        },
-        {
-          label: 'In-car — doors closed',
-          data: charts.inCarResponseClosed.map((p) => p.inCarDb),
-          borderColor: '#34d399',
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: doorsOpen ? 1.5 : 2.5
-        },
-        {
-          label: 'In-car — doors open',
-          data: charts.inCarResponseOpen.map((p) => p.inCarDb),
-          borderColor: '#2dd4bf',
-          borderDash: [6, 4],
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: doorsOpen ? 2.5 : 1.5
-        }
-      ]
+      datasets: passbandDatasets
     },
-    options: chartOptions('Passband + In-Car Estimate', 'Relative level (dB)', charts.markers)
-  })
-
-  updateSensitivityChart(result)
-}
-
-function updateSensitivityChart(result) {
-  const calloutEl = $('sensitivityCallouts')
-  const sens = result.sensitivity
-
-  if (!sens?.enabled || !sens?.volumeSweep) {
-    if (sensitivityChart) {
-      sensitivityChart.destroy()
-      sensitivityChart = null
-    }
-    if (calloutEl) {
-      calloutEl.innerHTML =
-        '<p class="sensitivity-note muted">Tolerance sweep is off — enable it under Build Adjustments to see how measurement error affects Fb and port length.</p>'
-    }
-    return
-  }
-
-  if (calloutEl) {
-    calloutEl.innerHTML = sens.callouts?.length
-      ? sens.callouts.map((c) => `<p class="sensitivity-note">${c}</p>`).join('')
-      : ''
-  }
-
-  const v1 = sens.volumeSweep.chamber1
-  const v2 = sens.volumeSweep.chamber2
-  const labels = v1.map((p) => `${p.pctError >= 0 ? '+' : ''}${p.pctError.toFixed(0)}%`)
-
-  if (sensitivityChart) sensitivityChart.destroy()
-  const chart = chartPalette()
-  sensitivityChart = new Chart($('sensitivityChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Fb1 drift (Hz)',
-          data: v1.map((p) => p.driftFbHz),
-          borderColor: '#60a5fa',
-          tension: 0.3,
-          pointRadius: 2
-        },
-        {
-          label: 'Fb2 drift (Hz)',
-          data: v2.map((p) => p.driftFbHz),
-          borderColor: '#34d399',
-          tension: 0.3,
-          pointRadius: 2
-        },
-        {
-          label: 'P1 length @ hold Fb (in)',
-          data: v1.map((p) => p.portLengthHoldFbIn),
-          borderColor: '#a78bfa',
-          borderDash: [4, 4],
-          tension: 0.3,
-          pointRadius: 0,
-          yAxisID: 'y1'
-        },
-        {
-          label: 'P2 length @ hold Fb (in)',
-          data: v2.map((p) => p.portLengthHoldFbIn),
-          borderColor: '#f472b6',
-          borderDash: [4, 4],
-          tension: 0.3,
-          pointRadius: 0,
-          yAxisID: 'y1'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: `Tuning Sensitivity (±${sens.tolerancePercent}% volume error)`,
-          color: chart.title,
-          font: { size: 13 }
-        },
-        legend: { labels: { color: chart.title } }
-      },
-      scales: {
-        x: {
-          title: { display: true, text: 'Volume measurement error', color: chart.axis },
-          ticks: { color: chart.axis, maxTicksLimit: 11 },
-          grid: { color: chart.grid }
-        },
-        y: {
-          title: { display: true, text: 'Fb drift (Hz)', color: chart.axis },
-          ticks: { color: chart.axis },
-          grid: { color: chart.grid }
-        },
-        y1: {
-          position: 'right',
-          title: { display: true, text: 'Port length (in)', color: chart.axis },
-          ticks: { color: chart.axis },
-          grid: { drawOnChartArea: false }
-        }
-      }
-    }
+    options: chartOptions(
+      showCabin ? 'Passband + In-Car Estimate' : 'Passband Estimate',
+      'Relative level (dB)',
+      charts.markers
+    )
   })
 }
 
@@ -847,10 +789,20 @@ function recalculate() {
     result.orderType,
     result.portRatios?.port1,
     result.driverArray.count,
-    result.fourthOrderAnalysis
+    result.fourthOrderAnalysis,
+    result.includeCabin
   )
   if (showChamber2(result.orderType)) {
-    renderChamberResults('chamber2Results', result.chambers.chamber2, result.excursion.chamber2, result.orderType, result.portRatios?.port2, result.driverArray.count)
+    renderChamberResults(
+      'chamber2Results',
+      result.chambers.chamber2,
+      result.excursion.chamber2,
+      result.orderType,
+      result.portRatios?.port2,
+      result.driverArray.count,
+      null,
+      result.includeCabin
+    )
   } else {
     $('chamber2Results').innerHTML = ''
   }
@@ -872,9 +824,11 @@ function recalculate() {
     volumeUnit: state.volumeUnit,
     lengthUnit: state.lengthUnit,
     cabinVolumeCuFt: inputs.cabinVolumeCuFt,
+    includeCabin: result.includeCabin,
     doorTuningAnalysis: result.doorTuningAnalysis
   })
 
+  updateChartTabs(result)
   updateCharts(result)
   syncComputedFbFields(result)
   updateNetVolPerSubReadouts(result.driverArray.count)
@@ -927,7 +881,7 @@ function updateSlotAreaCalc(chamber) {
 
   const outerW = toInches(num(`port${chamber}SlotW`))
   const outerH = toInches(num(`port${chamber}SlotH`))
-  const wall = toInches(num(`port${chamber}Wall`)) || 0
+  const wall = resolvePortWallIn(chamber)
   const innerW = Math.max(0, outerW - 2 * wall)
   const innerH = Math.max(0, outerH - 2 * wall)
   const areaSqIn = portAreaFromSlot(outerW, outerH, wall)
@@ -996,23 +950,13 @@ function toggleVolumeBasis(chamber) {
   }
 }
 
-function updateSliderLabels() {
-  const bracingOn = $('bracingEnabled').checked
-  const toleranceOn = $('toleranceEnabled').checked
-  $('bracingPercentLabel').textContent = bracingOn
-    ? `${$('bracingPercent').value}%`
-    : 'Off'
-  $('tolerancePercentLabel').textContent = toleranceOn
-    ? `±${$('tolerancePercent').value}%`
-    : 'Off'
-}
-
-function updateBuildAdjustmentsUI() {
-  const bracingOn = $('bracingEnabled').checked
-  const toleranceOn = $('toleranceEnabled').checked
-  $('bracingPercent').disabled = !bracingOn
-  $('tolerancePercent').disabled = !toleranceOn
-  updateSliderLabels()
+function updateIncludeCabinUI() {
+  const includeCabin = $('includeCabin').checked
+  const doorsEl = $('doorsOpen')
+  if (doorsEl) {
+    doorsEl.disabled = !includeCabin
+    if (!includeCabin) doorsEl.checked = false
+  }
 }
 
 function updateUnitLabels() {
@@ -1051,7 +995,7 @@ function refreshUIFromForm() {
   togglePortMode(2)
   toggleVolumeBasis(1)
   toggleVolumeBasis(2)
-  updateBuildAdjustmentsUI()
+  updateIncludeCabinUI()
   updateUnitLabels()
   updateCalcModeMenuUI()
   updatePortLengthPlaceholders()
@@ -1344,7 +1288,7 @@ function bindEvents() {
   const inputIds = [
     'cabinLength', 'cabinVolume', 'doorWidth', 'doorHeight', 'doorJambThickness', 'cabinLeakageArea',
     'maxDepth', 'maxHeight', 'maxWidth',
-    'wallThickness', 'bracingPercent', 'tolerancePercent',
+    'wallThickness', 'baffleThickness', 'portThickness',
     'driverSize', 'driverCount',
     'tsFs', 'tsQts', 'tsQes', 'tsVas', 'tsSd', 'tsRe', 'tsXmax', 'tsPe', 'tsVd',
     'fb1', 'vb1', 'vb1Gross', 'vb1Len', 'vb1Width', 'vb1Height', 'vb1Extra',
@@ -1353,18 +1297,19 @@ function bindEvents() {
     'port2Area', 'port2Diam', 'port2Length', 'port2SlotW', 'port2SlotH', 'port2Wall'
   ]
 
-  ;['bracingEnabled', 'toleranceEnabled'].forEach((id) => {
-    $(id).addEventListener('change', () => {
-      updateBuildAdjustmentsUI()
-      scheduleRecalculate()
-    })
+  $('includeCabin').addEventListener('change', () => {
+    updateIncludeCabinUI()
+    scheduleRecalculate()
   })
 
   inputIds.forEach((id) => {
     $(id).addEventListener('input', () => {
-      if (id === 'bracingPercent' || id === 'tolerancePercent') updateSliderLabels()
       if (id.match(/^port[12]SlotW|^port[12]SlotH|^port[12]Wall$/)) {
         updateSlotAreaCalc(id.includes('port1') ? 1 : 2)
+      }
+      if (id === 'portThickness') {
+        updateSlotAreaCalc(1)
+        updateSlotAreaCalc(2)
       }
       if (id.startsWith('ts')) updateTsFourthHint($('orderType').value)
       scheduleRecalculate()

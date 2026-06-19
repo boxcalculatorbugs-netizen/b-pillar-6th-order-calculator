@@ -33,7 +33,13 @@ function fmtDiagramArea(sqIn, areaUnit) {
   return `${sqIn.toFixed(0)} sq in`
 }
 
-function renderCabinZone({ cabinVolumeCuFt, doorTuning, volumeUnit, lengthUnit, areaUnit = 'sqin' }) {
+function renderCabinZone({ includeCabin = true, cabinVolumeCuFt, doorTuning, volumeUnit, lengthUnit, areaUnit = 'sqin' }) {
+  if (!includeCabin) {
+    return `
+  <rect x="${CABIN_X}" y="${BOX_Y - 8}" width="${CABIN_W}" height="${BOX_H + 16}" fill="rgba(148,163,184,0.06)" stroke="#475569" stroke-width="1" stroke-dasharray="8 4" rx="6"/>
+  <text x="${CABIN_X + CABIN_W / 2}" y="${BOX_Y + BOX_H / 2}" text-anchor="middle" fill="#64748b" font-size="14" font-family="Segoe UI, sans-serif" opacity="0.5">CABIN</text>`
+  }
+
   const doorActive = doorTuning?.enabled
   const doorValid = doorTuning?.valid
   const volLabel = volumeUnit === 'liters' ? 'L' : 'ft³'
@@ -120,7 +126,7 @@ function renderPortedDiagram(container, data) {
 <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" role="img">
   ${defs()}
   <text x="${SVG_W / 2}" y="24" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="600" font-family="Segoe UI, sans-serif">Ported — single chamber vents to cabin</text>
-  ${renderCabinZone({ cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
+  ${renderCabinZone({ includeCabin: data.includeCabin !== false, cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
   <rect x="${BOX_X}" y="${BOX_Y}" width="${BOX_W}" height="${BOX_H}" fill="#1a2332" stroke="#64748b" stroke-width="2" rx="4"/>
   <rect x="${BOX_X + 6}" y="${BOX_Y + 6}" width="${BOX_W - 12}" height="${BOX_H - 12}" fill="url(#rearGrad)" stroke="#60a5fa" stroke-width="1.5" rx="3"/>
   <text x="${BOX_X + BOX_W / 2}" y="${BOX_Y + 28}" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600" font-family="Segoe UI, sans-serif">Vented chamber</text>
@@ -199,7 +205,7 @@ function renderLayout(container, data, config) {
   ${defs()}
   <text x="${SVG_W / 2}" y="24" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="600" font-family="Segoe UI, sans-serif">${config.title}</text>
 
-  ${renderCabinZone({ cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
+  ${renderCabinZone({ includeCabin: data.includeCabin !== false, cabinVolumeCuFt, doorTuning: doorTuningAnalysis, volumeUnit, lengthUnit })}
 
   <!-- Box wall -->
   <rect x="${BOX_X}" y="${BOX_Y}" width="${BOX_W}" height="${BOX_H}" fill="#1a2332" stroke="#64748b" stroke-width="2" rx="4"/>

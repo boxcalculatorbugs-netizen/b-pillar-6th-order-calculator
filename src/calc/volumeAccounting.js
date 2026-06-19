@@ -1,8 +1,15 @@
 import { CU_FT_TO_CU_IN } from './constants.js'
 
 export const DEFAULT_WALL_THICKNESS_IN = 1.5
+export const DEFAULT_BAFFLE_THICKNESS_IN = 0.75
 export const DEFAULT_PORT_WALL_THICKNESS_IN = 0.75
 export const DEFAULT_BRACING_PERCENT = 15
+
+/** Internal chamber divider at full B-pillar cross-section (W × H × thickness). */
+export function baffleDisplacementCuFt(maxWidthIn, maxHeightIn, baffleThicknessIn) {
+  if (!maxWidthIn || !maxHeightIn || !baffleThicknessIn || baffleThicknessIn <= 0) return 0
+  return (maxWidthIn * maxHeightIn * baffleThicknessIn) / CU_FT_TO_CU_IN
+}
 
 /** Outer L×W×H → internal airspace before displacements */
 export function internalDimsFromOuter(lengthIn, widthIn, heightIn, wallThicknessIn) {
@@ -48,9 +55,11 @@ export function computeVolumeBreakdown({
   portVolumeCuFt = 0,
   driverShareCuFt = 0,
   bracingPercent = DEFAULT_BRACING_PERCENT,
-  extraDisplacementCuIn = 0
+  extraDisplacementCuIn = 0,
+  baffleCuFt = 0
 }) {
   const extraCuFt = (extraDisplacementCuIn || 0) / CU_FT_TO_CU_IN
+  const baffleCuFtVal = baffleCuFt || 0
   let grossInternalCuFt = 0
   let wallLossCuFt = 0
 
@@ -65,7 +74,7 @@ export function computeVolumeBreakdown({
   } else if (volumeBasis === 'grossVolume') {
     grossInternalCuFt = grossVolumeCuFt
   } else {
-    grossInternalCuFt = netVolumeCuFt + portVolumeCuFt + driverShareCuFt + extraCuFt
+    grossInternalCuFt = netVolumeCuFt + portVolumeCuFt + driverShareCuFt + extraCuFt + baffleCuFtVal
   }
 
   const bracingCuFtVal = bracingCuFt(
@@ -77,16 +86,17 @@ export function computeVolumeBreakdown({
   if (volumeBasis === 'net') {
     effectiveNetCuFt = netVolumeCuFt
     grossInternalCuFt =
-      netVolumeCuFt + portVolumeCuFt + driverShareCuFt + bracingCuFtVal + extraCuFt
+      netVolumeCuFt + portVolumeCuFt + driverShareCuFt + bracingCuFtVal + extraCuFt + baffleCuFtVal
     wallLossCuFt = 0
   } else {
     effectiveNetCuFt = Math.max(
       0,
-      grossInternalCuFt - portVolumeCuFt - driverShareCuFt - bracingCuFtVal - extraCuFt
+      grossInternalCuFt - portVolumeCuFt - driverShareCuFt - bracingCuFtVal - extraCuFt - baffleCuFtVal
     )
   }
 
-  const displacementTotalCuFt = portVolumeCuFt + driverShareCuFt + bracingCuFtVal + extraCuFt
+  const displacementTotalCuFt =
+    portVolumeCuFt + driverShareCuFt + bracingCuFtVal + extraCuFt + baffleCuFtVal
   const enteredNetCuFt = volumeBasis === 'net' ? netVolumeCuFt : effectiveNetCuFt
   const requiredGrossCuFt = grossInternalCuFt
   const additionalBeyondNetCuFt =
@@ -100,6 +110,7 @@ export function computeVolumeBreakdown({
     driverCuFt: driverShareCuFt,
     bracingCuFt: bracingCuFtVal,
     extraCuFt,
+    baffleCuFt: baffleCuFtVal,
     effectiveNetCuFt,
     enteredNetCuFt,
     requiredGrossCuFt,

@@ -17,6 +17,7 @@ import { calculateCabinGain, closedCabinGainSlope } from '../src/calc/cabin.js'
 import { estimateSd, getPortRatioWarning } from '../src/calc/driverArray.js'
 import {
   computeVolumeBreakdown,
+  baffleDisplacementCuFt,
   internalDimsFromOuter,
   volumeCuFtFromDims
 } from '../src/calc/volumeAccounting.js'
@@ -179,6 +180,50 @@ const netBreakdown = computeVolumeBreakdown({
 assertClose(netBreakdown.additionalBeyondNetCuFt, 0.35 + 0.1 + netBreakdown.bracingCuFt, 0.01, 'Net mode additional beyond net')
 assertClose(netBreakdown.requiredGrossCuFt, 2 + netBreakdown.additionalBeyondNetCuFt, 0.01, 'Net mode gross required')
 
+const totalBaffleCuFt = baffleDisplacementCuFt(58, 16, 0.75)
+const halfBaffleCuFt = totalBaffleCuFt / 2
+if (totalBaffleCuFt <= 0) {
+  throw new Error('Baffle displacement should be positive for 58×16×0.75 in')
+}
+const netWithBaffle = computeVolumeBreakdown({
+  volumeBasis: 'net',
+  netVolumeCuFt: 10,
+  portVolumeCuFt: 0.2,
+  driverShareCuFt: 0.05,
+  bracingPercent: 12,
+  baffleCuFt: halfBaffleCuFt
+})
+const netNoBaffle = computeVolumeBreakdown({
+  volumeBasis: 'net',
+  netVolumeCuFt: 10,
+  portVolumeCuFt: 0.2,
+  driverShareCuFt: 0.05,
+  bracingPercent: 12
+})
+if (netWithBaffle.requiredGrossCuFt <= netNoBaffle.requiredGrossCuFt) {
+  throw new Error('Baffle should increase required gross volume in net mode')
+}
+assertClose(netWithBaffle.baffleCuFt, halfBaffleCuFt, 0.0001, 'Net breakdown baffle cu ft')
+
+const grossWithBaffle = computeVolumeBreakdown({
+  volumeBasis: 'grossVolume',
+  grossVolumeCuFt: 12,
+  portVolumeCuFt: 0.2,
+  driverShareCuFt: 0.05,
+  bracingPercent: 12,
+  baffleCuFt: halfBaffleCuFt
+})
+const grossNoBaffle = computeVolumeBreakdown({
+  volumeBasis: 'grossVolume',
+  grossVolumeCuFt: 12,
+  portVolumeCuFt: 0.2,
+  driverShareCuFt: 0.05,
+  bracingPercent: 12
+})
+if (grossWithBaffle.effectiveNetCuFt >= grossNoBaffle.effectiveNetCuFt) {
+  throw new Error('Baffle should reduce effective net volume in gross mode')
+}
+
 assertClose(portAreaPerNetCuFt(22, 2), 11, 0.01, 'Port area per net cu ft')
 
 const seriesResult = runAll({
@@ -187,8 +232,6 @@ const seriesResult = runAll({
   driverSizeIn: 15,
   driverCount: 2,
   wallThicknessIn: 1.5,
-  bracingPercent: 15,
-  tolerancePercent: 10,
   cabinLengthIn: 120,
   cabinVolumeCuFt: 80,
   maxDepthIn: 18,
@@ -202,17 +245,65 @@ const seriesResult = runAll({
 if (seriesResult.summary.totalSdSqIn !== 250) {
   throw new Error(`Expected total Sd 250, got ${seriesResult.summary.totalSdSqIn}`)
 }
-if (!seriesResult.sensitivity?.volumeSweep?.chamber1?.length) {
-  throw new Error('Sensitivity sweep not generated')
-}
 assertClose(seriesResult.chambers.chamber1.portAreaPerCuFt, 11, 0.5, 'Series Ch.1 port area per cu ft')
+
+const noCabinResult = runAll({
+  orderType: 'series',
+  includeCabin: false,
+  driverSizeIn: 15,
+  driverCount: 2,
+  wallThicknessIn: 1.5,
+  cabinLengthIn: 120,
+  cabinVolumeCuFt: 80,
+  maxDepthIn: 18,
+  maxHeightIn: 14,
+  maxWidthIn: 52,
+  ts: { Fs: null, Qts: null, Qes: null, Vas: null, Sd: null },
+  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
+})
+if (noCabinResult.summary.cabinBoostFb2Active !== 0) {
+  throw new Error('Excluded cabin should zero cabin boost')
+}
+if (noCabinResult.volumeCoupling.warnings.length > 0) {
+  throw new Error('Excluded cabin should skip coupling warnings')
+}
+if (noCabinResult.charts.cabinCurveClosed.length > 0) {
+  throw new Error('Excluded cabin should omit cabin gain curves')
+}
+if (noCabinResult.charts.inCarResponseClosed.some((p) => p.inCarDb !== p.passbandDb)) {
+  throw new Error('Excluded cabin passband chart should not apply in-car overlay')
+}
+
+const baffleSeriesResult = runAll({
+  orderType: 'series',
+  doorsOpen: false,
+  driverSizeIn: 15,
+  driverCount: 2,
+  wallThicknessIn: 1.5,
+  baffleThicknessIn: 0.75,
+  cabinLengthIn: 120,
+  cabinVolumeCuFt: 80,
+  maxDepthIn: 18,
+  maxHeightIn: 16,
+  maxWidthIn: 58,
+  ts: { Fs: null, Qts: null, Qes: null, Vas: null, Sd: null },
+  chamber1: netChamber({ fbHz: 30, volumeCuFt: 2, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 4, portAreaSqIn: 30 })
+})
+const b1 = baffleSeriesResult.volumeBreakdown?.chamber1
+const b2 = baffleSeriesResult.volumeBreakdown?.chamber2
+if (!b1?.baffleCuFt || !b2?.baffleCuFt) {
+  throw new Error('Dual-chamber series should include baffle displacement per chamber')
+}
+assertClose(b1.baffleCuFt, b2.baffleCuFt, 0.0001, 'Baffle split evenly between chambers')
+assertClose(b1.baffleCuFt + b2.baffleCuFt, totalBaffleCuFt, 0.0001, 'Total baffle matches W×H×thickness')
 
 const rectSlotResult = runAll({
   orderType: 'series',
   driverSizeIn: 15,
   driverCount: 2,
   wallThicknessIn: 1.5,
-  bracingPercent: 15,
   cabinLengthIn: 120,
   cabinVolumeCuFt: 80,
   maxDepthIn: 18,
@@ -242,7 +333,6 @@ const grossResult = runAll({
   driverSizeIn: 15,
   driverCount: 2,
   wallThicknessIn: 1.5,
-  bracingPercent: 15,
   cabinLengthIn: 120,
   cabinVolumeCuFt: 80,
   maxDepthIn: 18,
@@ -490,4 +580,4 @@ if (!doorWarning || doorWarning.level !== 'amber') {
 
 console.log('All calc verification checks passed.')
 console.log(`  Gross-dims Ch.1 net: ${grossResult.chambers.chamber1.volumeCuFt.toFixed(3)} cu ft`)
-console.log(`  Sensitivity callouts: ${seriesResult.sensitivity.callouts.length}`)
+console.log(`  No-cabin boost: ${noCabinResult.summary.cabinBoostFb2Active} dB`)

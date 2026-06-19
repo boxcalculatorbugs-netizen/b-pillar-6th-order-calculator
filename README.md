@@ -33,9 +33,9 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 - **Dual-chamber port calculator** — Helmholtz port length with end correction
 - **Port input modes** — area, round diameter, or **slot (W × H)** with port wall thickness
 - **Volume basis per chamber** — net, gross L×W×H (outer or internal), or gross volume
-- **Build adjustments** — wall thickness (default **1.5 in / 2×3/4" MDF**), bracing %, extra displacement
-- **Volume breakdown table** — gross → port → driver → bracing → effective net
-- **Tuning sensitivity chart** — Fb drift and port length vs ±% volume measurement error
+- **Build adjustments** — wall thickness (default **1.5 in**), baffle thickness (**0.75 in**), port thickness (**0.75 in** default for slots)
+- **Volume breakdown table** — gross → port → driver → baffle → effective net
+- **Optional cabin** — include or exclude cabin gain, coupling, and in-car overlays
 - **Driver array** — sub size/count with auto Sd and port:Sd ratio warnings
 - **Cabin gain** — 12 dB/oct closed, 3 dB/oct open; dual curves on charts
 - **B-pillar packaging**, T/S modeling, SVG diagram, passband estimates
@@ -44,9 +44,9 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 
 | Section | Purpose |
 |---------|---------|
-| **Vehicle / Cabin** | Longest interior dimension, cabin volume, doors open |
+| **Vehicle / Cabin** | Longest interior dimension, cabin volume, include cabin toggle, doors open |
 | **B-Pillar Space** | Max depth, height, width for the wall |
-| **Build Adjustments** | Wall thickness, bracing toggle + %, tolerance sweep toggle + range |
+| **Build Adjustments** | Wall thickness, baffle thickness, port thickness |
 | **Driver Array** | Sub size and count → auto cone area (Sd) |
 | **Chamber 1 / 2** | Fb, volume basis, port mode (area / diameter / slot) |
 
@@ -55,7 +55,7 @@ Calculation logic lives in [`src/calc/`](src/calc/) — [`engine.js`](src/calc/e
 | Mode | You enter | App computes |
 |------|-----------|--------------|
 | **Net** | Target net volume | Gross = net + displacements |
-| **Gross L×W×H** | Box dimensions | Net after wall loss, port, driver, bracing |
+| **Gross L×W×H** | Box dimensions | Net after wall loss, port, driver, baffle |
 | **Gross volume** | Single gross cu ft | Net after all displacements |
 
 Check **Measure from outer dims** to subtract wall thickness (default 1.5 in) from each axis.

@@ -26,8 +26,7 @@ import { analyzeChamberExcursion } from './excursion.js'
 import { analyzePackaging } from './packaging.js'
 import { estimateInCarResponse, getMarkerFrequencies, estimateBandwidth } from './response.js'
 import { calculateDriverArray, getPortRatioWarnings } from './driverArray.js'
-import { computeVolumeBreakdown, DEFAULT_WALL_THICKNESS_IN } from './volumeAccounting.js'
-import { buildSensitivityReport } from './sensitivity.js'
+import { computeVolumeBreakdown, baffleDisplacementCuFt, DEFAULT_WALL_THICKNESS_IN } from './volumeAccounting.js'
 import { round, clamp } from './constants.js'
 import { isFourth, isPorted, primaryTuningFb } from './orderTypes.js'
 import { analyzeFourthOrderCompatibility } from './fourthOrder.js'
@@ -73,6 +72,24 @@ function emptyPortResult() {
   }
 }
 
+function breakdownOpts(chamber, build, portVolumeCuFt, driverShareCuFt) {
+  return {
+    volumeBasis: chamber.volumeBasis || 'net',
+    netVolumeCuFt: chamber.volumeCuFt,
+    grossVolumeCuFt: chamber.grossVolumeCuFt,
+    grossLengthIn: chamber.grossLengthIn,
+    grossWidthIn: chamber.grossWidthIn,
+    grossHeightIn: chamber.grossHeightIn,
+    measureFromOuter: chamber.measureFromOuter,
+    wallThicknessIn: build.wallThicknessIn,
+    portVolumeCuFt,
+    driverShareCuFt,
+    bracingPercent: 0,
+    extraDisplacementCuIn: chamber.extraDisplacementCuIn,
+    baffleCuFt: build.baffleShareCuFt ?? 0
+  }
+}
+
 function runSealedChamberIteration(chamber, driverShareCuFt, build) {
   const volumeBasis = chamber.volumeBasis || 'net'
   let netVol = chamber.volumeCuFt
@@ -80,29 +97,17 @@ function runSealedChamberIteration(chamber, driverShareCuFt, build) {
 
   if (volumeBasis === 'net') {
     const breakdown = computeVolumeBreakdown({
-      volumeBasis: 'net',
-      netVolumeCuFt: netVol,
-      portVolumeCuFt: 0,
-      driverShareCuFt,
-      bracingPercent: build.bracingPercent,
-      extraDisplacementCuIn: chamber.extraDisplacementCuIn
+      ...breakdownOpts(chamber, build, 0, driverShareCuFt),
+      netVolumeCuFt: netVol
     })
     return { netVol, portResult, breakdown }
   }
 
   for (let pass = 0; pass < 3; pass++) {
     const breakdown = computeVolumeBreakdown({
+      ...breakdownOpts(chamber, build, 0, driverShareCuFt),
       volumeBasis,
-      grossVolumeCuFt: chamber.grossVolumeCuFt,
-      grossLengthIn: chamber.grossLengthIn,
-      grossWidthIn: chamber.grossWidthIn,
-      grossHeightIn: chamber.grossHeightIn,
-      measureFromOuter: chamber.measureFromOuter,
-      wallThicknessIn: build.wallThicknessIn,
-      portVolumeCuFt: 0,
-      driverShareCuFt,
-      bracingPercent: build.bracingPercent,
-      extraDisplacementCuIn: chamber.extraDisplacementCuIn
+      netVolumeCuFt: netVol
     })
     netVol = breakdown.effectiveNetCuFt
     if (pass === 2) {
@@ -170,12 +175,8 @@ function runChamberIteration(chamber, area, orderType, chamberIndex, driverShare
 
   if (volumeBasis === 'net') {
     const breakdown = computeVolumeBreakdown({
-      volumeBasis: 'net',
-      netVolumeCuFt: netVol,
-      portVolumeCuFt: portResult.portVolumeCuFt,
-      driverShareCuFt,
-      bracingPercent: build.bracingPercent,
-      extraDisplacementCuIn: chamber.extraDisplacementCuIn
+      ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
+      netVolumeCuFt: netVol
     })
     return { netVol, portResult, breakdown }
   }
@@ -183,34 +184,18 @@ function runChamberIteration(chamber, area, orderType, chamberIndex, driverShare
   for (let pass = 0; pass < 3; pass++) {
     portResult = chamberPortResult(chamber, area, orderType, chamberIndex, netVol, calcMode)
     const breakdown = computeVolumeBreakdown({
+      ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
       volumeBasis,
-      grossVolumeCuFt: chamber.grossVolumeCuFt,
-      grossLengthIn: chamber.grossLengthIn,
-      grossWidthIn: chamber.grossWidthIn,
-      grossHeightIn: chamber.grossHeightIn,
-      measureFromOuter: chamber.measureFromOuter,
-      wallThicknessIn: build.wallThicknessIn,
-      portVolumeCuFt: portResult.portVolumeCuFt,
-      driverShareCuFt,
-      bracingPercent: build.bracingPercent,
-      extraDisplacementCuIn: chamber.extraDisplacementCuIn
+      netVolumeCuFt: netVol
     })
     netVol = breakdown.effectiveNetCuFt
     if (pass === 2) {
       portResult = chamberPortResult(chamber, area, orderType, chamberIndex, netVol, calcMode)
       breakdown.portCuFt = portResult.portVolumeCuFt
       breakdown.effectiveNetCuFt = computeVolumeBreakdown({
+        ...breakdownOpts(chamber, build, portResult.portVolumeCuFt, driverShareCuFt),
         volumeBasis,
-        grossVolumeCuFt: chamber.grossVolumeCuFt,
-        grossLengthIn: chamber.grossLengthIn,
-        grossWidthIn: chamber.grossWidthIn,
-        grossHeightIn: chamber.grossHeightIn,
-        measureFromOuter: chamber.measureFromOuter,
-        wallThicknessIn: build.wallThicknessIn,
-        portVolumeCuFt: portResult.portVolumeCuFt,
-        driverShareCuFt,
-        bracingPercent: build.bracingPercent,
-        extraDisplacementCuIn: chamber.extraDisplacementCuIn
+        netVolumeCuFt: netVol
       }).effectiveNetCuFt
       return { netVol: breakdown.effectiveNetCuFt, portResult, breakdown }
     }
@@ -222,6 +207,7 @@ function runChamberIteration(chamber, area, orderType, chamberIndex, driverShare
 export function runAll(inputs) {
   const {
     orderType = 'series',
+    includeCabin = true,
     doorsOpen = false,
     driverSizeIn,
     driverCount,
@@ -231,9 +217,7 @@ export function runAll(inputs) {
     maxHeightIn,
     maxWidthIn,
     wallThicknessIn = DEFAULT_WALL_THICKNESS_IN,
-    bracingPercent = 15,
-    tolerancePercent = 10,
-    toleranceEnabled = true,
+    baffleThicknessIn = 0,
     ts,
     chamber1,
     chamber2,
@@ -251,7 +235,14 @@ export function runAll(inputs) {
     : null
   const closedGainSlope = cabinLeakage ? closedCabinGainSlope(cabinLeakage) : null
 
-  const build = { wallThicknessIn, bracingPercent }
+  const totalBaffleCuFt = isPorted(orderType)
+    ? 0
+    : baffleDisplacementCuFt(maxWidthIn, maxHeightIn, baffleThicknessIn)
+  const build = {
+    wallThicknessIn,
+    bracingPercent: 0,
+    baffleShareCuFt: totalBaffleCuFt / 2
+  }
   const isSeries = orderType === 'series'
   const area1 = isFourth(orderType) ? 0 : resolvePortArea(chamber1)
   const area2 = isPorted(orderType) ? 0 : resolvePortArea(chamber2)
@@ -279,20 +270,12 @@ export function runAll(inputs) {
   const port2 = iter2.portResult
 
   const breakdown1 = iter1.breakdown || computeVolumeBreakdown({
-    volumeBasis: chamber1.volumeBasis || 'net',
-    netVolumeCuFt: netVol1,
-    portVolumeCuFt: port1.portVolumeCuFt,
-    driverShareCuFt: driverShare1,
-    bracingPercent,
-    extraDisplacementCuIn: chamber1.extraDisplacementCuIn
+    ...breakdownOpts(chamber1, build, port1.portVolumeCuFt, driverShare1),
+    netVolumeCuFt: netVol1
   })
   const breakdown2 = iter2.breakdown || computeVolumeBreakdown({
-    volumeBasis: chamber2.volumeBasis || 'net',
-    netVolumeCuFt: netVol2,
-    portVolumeCuFt: port2.portVolumeCuFt,
-    driverShareCuFt: driverShare2,
-    bracingPercent,
-    extraDisplacementCuIn: chamber2.extraDisplacementCuIn
+    ...breakdownOpts(chamber2, build, port2.portVolumeCuFt, driverShare2),
+    netVolumeCuFt: netVol2
   })
 
   const slot1Inner = chamber1.portInputMode === 'slot' ? slotInnerDims(chamber1) : null
@@ -301,32 +284,36 @@ export function runAll(inputs) {
   const fb1 = isFourth(orderType) ? 0 : resolveEffectiveFb(chamber1, port1, netVol1, area1, orderType, 1, calcMode)
   const fb2 = isPorted(orderType) ? 0 : resolveEffectiveFb(chamber2, port2, netVol2, area2, orderType, 2, calcMode)
 
-  const cabin1Closed = isSeries || isFourth(orderType)
+  const cabin1Closed = !includeCabin || isSeries || isFourth(orderType)
     ? { onsetFreqHz: 0, dbBoost: 0 }
     : calculateCabinGain(cabinLengthIn, fb1, false, cabinLeakage)
-  const cabin1Open = isSeries || isFourth(orderType)
+  const cabin1Open = !includeCabin || isSeries || isFourth(orderType)
     ? { onsetFreqHz: 0, dbBoost: 0 }
     : calculateCabinGain(cabinLengthIn, fb1, true)
 
   const externalFb = isPorted(orderType) ? fb1 : fb2
-  const cabin2Closed = isPorted(orderType)
+  const cabin2Closed = !includeCabin || isPorted(orderType)
     ? { onsetFreqHz: 0, dbBoost: 0 }
     : calculateCabinGain(cabinLengthIn, externalFb, false, cabinLeakage)
-  const cabin2Open = isPorted(orderType)
+  const cabin2Open = !includeCabin || isPorted(orderType)
     ? { onsetFreqHz: 0, dbBoost: 0 }
     : calculateCabinGain(cabinLengthIn, externalFb, true)
-  const cabinExternalClosed = isPorted(orderType)
-    ? calculateCabinGain(cabinLengthIn, fb1, false, cabinLeakage)
-    : cabin2Closed
+  const cabinExternalClosed = !includeCabin
+    ? { onsetFreqHz: 0, dbBoost: 0 }
+    : isPorted(orderType)
+      ? calculateCabinGain(cabinLengthIn, fb1, false, cabinLeakage)
+      : cabin2Closed
 
-  const volumeCoupling = calculateCabinVolumeCoupling(
-    cabinVolumeCuFt,
-    netVol1,
-    isPorted(orderType) ? 0 : netVol2,
-    externalFb,
-    cabinExternalClosed.onsetFreqHz,
-    doorsOpen
-  )
+  const volumeCoupling = includeCabin
+    ? calculateCabinVolumeCoupling(
+        cabinVolumeCuFt,
+        netVol1,
+        isPorted(orderType) ? 0 : netVol2,
+        externalFb,
+        cabinExternalClosed.onsetFreqHz,
+        doorsOpen
+      )
+    : { boxRatio: 0, boostAdjustDb: 0, warnings: [] }
 
   const activeCabin1 = doorsOpen ? cabin1Open : cabin1Closed
   const activeCabin2 = doorsOpen ? cabin2Open : cabin2Closed
@@ -440,20 +427,7 @@ export function runAll(inputs) {
     orderType
   )
 
-  const sensitivity = toleranceEnabled !== false
-    ? buildSensitivityReport(
-        chambers.chamber1,
-        chambers.chamber2,
-        orderType,
-        tsForCalc,
-        tolerancePercent,
-        calcMode
-      )
-    : { enabled: false, tolerancePercent: 0, volumeSweep: null, portAreaSweep: null, callouts: [] }
-
-  if (sensitivity.volumeSweep) {
-    sensitivity.enabled = true
-  }
+  const sensitivity = { enabled: false, tolerancePercent: 0, volumeSweep: null, portAreaSweep: null, callouts: [] }
 
   let fourthOrderAnalysis = null
   if (isFourth(orderType)) {
@@ -485,17 +459,21 @@ export function runAll(inputs) {
   })
 
   const allWarnings = [
-    ...volumeCoupling.warnings,
+    ...(includeCabin ? volumeCoupling.warnings : []),
     ...getTsWarnings(tsForCalc, fb1, fb2),
     ...excursion.excursionWarnings,
-    ...(portRatios.port1 && !isFourth(orderType)
+    ...(portRatios.port1 && !isFourth(orderType) && portRatios.port1.level !== 'green'
       ? [{ level: portRatios.port1.level, message: `P1 port:Sd — ${portRatios.port1.message}` }]
       : []),
-    ...(portRatios.port2 && !isPorted(orderType)
+    ...(portRatios.port2 && !isPorted(orderType) && portRatios.port2.level !== 'green'
       ? [{ level: portRatios.port2.level, message: `${isFourth(orderType) ? 'Port' : 'P2'} port:Sd — ${portRatios.port2.message}` }]
       : []),
-    ...(excursion.chamber1.velocityWarning ? [excursion.chamber1.velocityWarning] : []),
-    ...(excursion.chamber2.velocityWarning ? [excursion.chamber2.velocityWarning] : []),
+    ...(excursion.chamber1.velocityWarning && excursion.chamber1.velocityWarning.level !== 'green'
+      ? [excursion.chamber1.velocityWarning]
+      : []),
+    ...(excursion.chamber2.velocityWarning && excursion.chamber2.velocityWarning.level !== 'green'
+      ? [excursion.chamber2.velocityWarning]
+      : []),
     ...packaging.warnings
   ]
 
@@ -540,9 +518,12 @@ export function runAll(inputs) {
     20,
     80,
     orderType,
-    cabinLeakage
+    cabinLeakage,
+    includeCabin
   )
-  const cabinCurves = cabinGainCurveDual(cabinLengthIn, 20, 80, 60, cabinLeakage)
+  const cabinCurves = includeCabin
+    ? cabinGainCurveDual(cabinLengthIn, 20, 80, 60, cabinLeakage)
+    : { closed: [], open: [] }
   const markers = getMarkerFrequencies(
     fb1,
     fb2,
@@ -561,6 +542,7 @@ export function runAll(inputs) {
 
   return {
     orderType,
+    includeCabin,
     doorsOpen,
     calcMode,
     driverArray,
@@ -607,7 +589,6 @@ export function runAll(inputs) {
       driverCount: driverArray.count,
       driverSizeIn: driverArray.sizeIn,
       wallThicknessIn,
-      bracingPercent,
       passbandBandwidthHz: passbandBandwidth ? round(passbandBandwidth.bandwidthHz, 1) : null,
       passbandLowHz: passbandBandwidth ? round(passbandBandwidth.lowHz, 1) : null,
       passbandHighHz: passbandBandwidth ? round(passbandBandwidth.highHz, 1) : null,

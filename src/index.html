@@ -130,6 +130,10 @@
               <span class="unit-label volume-unit">cu ft</span>
             </label>
             <label class="toggle-row">
+              <input type="checkbox" id="includeCabin" checked />
+              Include cabin in calculations
+            </label>
+            <label class="toggle-row">
               <input type="checkbox" id="doorsOpen" />
               Doors open (reduced cabin loading)
             </label>
@@ -193,41 +197,17 @@
               <span class="unit-label length-unit">in</span>
               <span class="field-hint">2 × 3/4" MDF default — subtracted from outer L×W×H when measuring from outside the box</span>
             </label>
-          </div>
-          <div class="build-option">
-            <label class="toggle-row">
-              <input type="checkbox" id="bracingEnabled" checked />
-              Include bracing allowance
+            <label>
+              Baffle thickness
+              <input type="number" id="baffleThickness" value="0.75" min="0" step="0.125" />
+              <span class="unit-label length-unit">in</span>
+              <span class="field-hint">Internal divider between chambers — displacement uses B-pillar max W×H</span>
             </label>
-            <p class="field-hint build-hint">
-              Reserves extra internal volume for window braces, dowels, amp niches, and structural ribs.
-              Typical car-audio walls use 10–20% of each chamber's net volume. Set to 0% if you already
-              accounted for bracing in your gross measurements.
-            </p>
-            <label class="build-slider-row">
-              Bracing allowance
-              <span class="slider-row">
-                <input type="range" id="bracingPercent" min="0" max="25" step="1" value="12" />
-                <span id="bracingPercentLabel">15%</span>
-              </span>
-            </label>
-          </div>
-          <div class="build-option">
-            <label class="toggle-row">
-              <input type="checkbox" id="toleranceEnabled" checked />
-              Enable tolerance sweep
-            </label>
-            <p class="field-hint build-hint">
-              Models what happens if your built box is slightly off — e.g. chamber volume ±5–10% from
-              plan. Shows Fb drift and how much port length would need to change to hold tuning.
-              See the <strong>Tuning Sensitivity</strong> chart tab when enabled.
-            </p>
-            <label class="build-slider-row">
-              Sweep range
-              <span class="slider-row">
-                <input type="range" id="tolerancePercent" min="5" max="20" step="1" value="8" />
-                <span id="tolerancePercentLabel">±10%</span>
-              </span>
+            <label>
+              Port thickness
+              <input type="number" id="portThickness" value="0.75" min="0" step="0.125" />
+              <span class="unit-label length-unit">in</span>
+              <span class="field-hint">Default slot port wall MDF — override per chamber in slot mode</span>
             </label>
           </div>
         </details>
@@ -369,8 +349,9 @@
             </label>
             <label id="port1WallLabel" class="hidden ch1-port-field">
               Port wall thickness
-              <input type="number" id="port1Wall" value="0.75" min="0" step="0.125" />
+              <input type="number" id="port1Wall" value="" min="0" step="0.125" placeholder="0.75" />
               <span class="unit-label length-unit">in</span>
+              <span class="field-hint">Blank uses Build Adjustments port thickness</span>
             </label>
             <label id="port1LengthLabel" class="hidden ch1-port-field">
               Port length (L)
@@ -467,8 +448,9 @@
             </label>
             <label id="port2WallLabel" class="hidden">
               Port wall thickness
-              <input type="number" id="port2Wall" value="0.75" min="0" step="0.125" />
+              <input type="number" id="port2Wall" value="" min="0" step="0.125" placeholder="0.75" />
               <span class="unit-label length-unit">in</span>
+              <span class="field-hint">Blank uses Build Adjustments port thickness</span>
             </label>
             <label id="port2LengthLabel" class="hidden">
               Port length (L)
@@ -533,7 +515,6 @@
             <button type="button" class="tab active" data-tab="diagram">Box Diagram</button>
             <button type="button" class="tab" data-tab="cabin">Cabin Gain</button>
             <button type="button" class="tab" data-tab="passband">Passband Estimate</button>
-            <button type="button" class="tab" data-tab="sensitivity">Tuning Sensitivity</button>
           </div>
           <div id="tabDiagram" class="tab-panel active">
             <div id="diagramContainer" class="diagram-container"></div>
@@ -543,10 +524,6 @@
           </div>
           <div id="tabPassband" class="tab-panel">
             <canvas id="passbandChart"></canvas>
-          </div>
-          <div id="tabSensitivity" class="tab-panel">
-            <div id="sensitivityCallouts" class="sensitivity-callouts"></div>
-            <canvas id="sensitivityChart"></canvas>
           </div>
         </div>
       </section>
@@ -618,13 +595,14 @@
           <section id="man-volume">
             <h3>Volume metrics</h3>
             <table class="metric-table">
-              <tr><th>Net volume</th><td>Air volume inside the chamber after subtracting port, driver, bracing, and obstructions. Used directly in the port-length formula.</td></tr>
+              <tr><th>Net volume</th><td>Air volume inside the chamber after subtracting port, driver, baffle, and obstructions. Used directly in the port-length formula.</td></tr>
               <tr><th>Net vol / sub</th><td>Chamber net volume divided by total driver count — airspace per woofer for that chamber. Also shown under the net volume input while in net basis.</td></tr>
-              <tr><th>Gross volume</th><td>Total constructed chamber volume including displacements and bracing allowance.</td></tr>
-              <tr><th>Volume basis — Net</th><td>You enter target net cu ft (required airspace). The breakdown adds port, driver, bracing, and other displacements to show built gross volume needed.</td></tr>
-              <tr><th>Volume basis — Gross L×W×H</th><td>You enter box dimensions. App subtracts wall loss (if outer dims), port, driver share, bracing, and extra displacement to get effective net.</td></tr>
+              <tr><th>Gross volume</th><td>Total constructed chamber volume including displacements.</td></tr>
+              <tr><th>Volume basis — Net</th><td>You enter target net cu ft (required airspace). The breakdown adds port, driver, baffle, and other displacements to show built gross volume needed.</td></tr>
+              <tr><th>Volume basis — Gross L×W×H</th><td>You enter box dimensions. App subtracts wall loss (if outer dims), port, driver share, baffle, and extra displacement to get effective net.</td></tr>
               <tr><th>Volume basis — Gross volume</th><td>Single gross number; net = gross minus all displacements.</td></tr>
               <tr><th>Wall panel loss</th><td>Volume consumed by doubled walls when measuring outer dimensions (2 × wall thickness per axis).</td></tr>
+              <tr><th>Baffle panel</th><td>Half of the internal divider displacement (B-pillar max W × H × baffle thickness) subtracted per chamber in dual-chamber designs.</td></tr>
               <tr><th>Bracing allowance</th><td>Extra % of chamber volume reserved for internal braces and structure (default 15%). Turn off if already included in gross measurements.</td></tr>
               <tr><th>Extra displacement</th><td>Fixed cu in subtracted per chamber (amp niches, obstructions).</td></tr>
               <tr><th>Port displacement</th><td>Internal volume occupied by the port tunnel (area × length).</td></tr>
@@ -639,7 +617,7 @@
             <table class="metric-table">
               <tr><th>Port area</th><td>Cross-section of the port opening (sq in). Larger area = shorter port for same Fb, but needs more wall space.</td></tr>
               <tr><th>Port area / net vol</th><td>Port cross-section divided by chamber net volume (sq in per cu ft). Common slot-port sizing ratio shown per chamber.</td></tr>
-              <tr><th>Slot (W × H)</th><td>Outer slot dimensions plus port wall thickness (default 0.75 in). Inner opening = (W − 2×wall) × (H − 2×wall) — shown live when slot mode is selected.</td></tr>
+              <tr><th>Slot (W × H)</th><td>Outer slot dimensions plus port wall thickness (Build Adjustments default 0.75 in, or per-chamber override). Inner opening = (W − 2×wall) × (H − 2×wall) — shown live when slot mode is selected.</td></tr>
               <tr><th>Port length</th><td>Area mode: calculated from the selected port model (Edit → Port length model). Diameter &amp; slot modes: enter built port length, or leave blank to use calculated value. Slot uses W × H × L.</td></tr>
               <tr><th>Helmholtz</th><td>Classic chamber + port resonance: length from Fb, net volume, and port area with end correction.</td></tr>
               <tr><th>Quarter Wave</th><td>λ/4 tube length (c ÷ 4Fb) with end correction — volume-independent.</td></tr>
@@ -671,7 +649,8 @@
             <h3>Cabin &amp; in-car metrics</h3>
             <table class="metric-table">
               <tr><th>Longest cabin dimension</th><td>Drives cabin onset frequency (typically floor-to-roof or longest interior axis).</td></tr>
-              <tr><th>Cabin volume</th><td>Total passenger volume — used for box/cabin ratio and coupling adjustment.</td></tr>
+              <tr><th>Include cabin</th><td>When unchecked, cabin gain, coupling, and in-car overlays are omitted — useful for outdoor or trunk-only builds.</td></tr>
+              <tr><th>Cabin volume</th><td>Total passenger volume — used for box/cabin ratio and coupling adjustment when cabin is included.</td></tr>
               <tr><th>Door tuning (experimental)</th><td>Door-jamb Helmholtz tuning: <strong>F_door</strong> from cabin volume, door mouth W×H, jamb thickness (+ end correction), and optional parasitic leak area when the cabin is not perfectly sealed. Chamber 3 shows jamb vs correction breakdown, leak/total vent area, closed cabin slope, and <strong>recommended jamb</strong> to match F2/Fb. Typical jamb 2–8 in; door mouth ~18–30 × 24–42 in. SPL door-open: align F_door to front tuning; musical: keep &gt;5 Hz separation.</td></tr>
               <tr><th>Cabin sealed / leakage</th><td>When door tuning is enabled: <strong>Perfectly sealed</strong> = 12 dB/oct closed-door cabin gain and zero parasitic vent. Unsealed cabins degrade closed slope by 0.2 dB/oct per sq in of estimated leak area (floor 3 dB/oct). Leak area adds to door mouth area for F_door when not sealed.</td></tr>
               <tr><th>Cabin Gain chart</th><td>Estimated low-frequency boost below onset — solid = doors closed, dashed = doors open.</td></tr>
@@ -684,8 +663,8 @@
             <h3>Build adjustments</h3>
             <table class="metric-table">
               <tr><th>Wall thickness</th><td>Default 1.5 in (2× 3/4" MDF). Subtracted from outer L×W×H on each axis when "measure from outer dims" is checked.</td></tr>
-              <tr><th>Bracing allowance</th><td>Percentage of net volume held for internal structure. Disable if your gross dims already account for braces.</td></tr>
-              <tr><th>Tolerance sweep range</th><td>±% used on the Tuning Sensitivity chart. Disable entirely to skip that analysis.</td></tr>
+              <tr><th>Baffle thickness</th><td>Internal divider between chambers (default 0.75 in). Each chamber loses half of (B-pillar max W × H × baffle thickness) in volume breakdown. Not applied for single-chamber ported designs.</td></tr>
+              <tr><th>Port thickness</th><td>Default slot port wall MDF (0.75 in). Used when chamber slot mode port wall is left blank; override per chamber in slot mode.</td></tr>
             </table>
           </section>
 
@@ -693,8 +672,7 @@
             <h3>Charts &amp; warnings</h3>
             <p><strong>Box Diagram</strong> — cross-section with chamber volumes, port routing (series vs parallel), cabin as Ch. 3 when door tuning is enabled, and packaging notes.</p>
             <p><strong>Cabin Gain</strong> — boost vs frequency with Fb1, Fb2, estimated usable edges, and cabin onset markers.</p>
-            <p><strong>Passband Estimate</strong> — relative passband shape plus in-car overlay (closed vs open).</p>
-            <p><strong>Tuning Sensitivity</strong> — Fb drift and port length vs volume measurement error (when tolerance sweep is enabled).</p>
+            <p><strong>Passband Estimate</strong> — relative passband shape plus in-car overlay (closed vs open) when cabin is included; passband only when cabin is excluded.</p>
             <p>Warnings aggregate port compression, velocity, packaging, T/S limits, excursion, and cabin coupling issues. Green = OK, amber = review, red = likely problem.</p>
           </section>
 

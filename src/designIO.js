@@ -14,8 +14,8 @@ export const DESIGN_TEXT_IDS = [
   'maxHeight',
   'maxWidth',
   'wallThickness',
-  'bracingPercent',
-  'tolerancePercent',
+  'baffleThickness',
+  'portThickness',
   'driverSize',
   'driverCount',
   'tsFs',
@@ -64,10 +64,9 @@ export const DESIGN_TEXT_IDS = [
 ]
 
 export const DESIGN_CHECKBOX_IDS = [
+  'includeCabin',
   'doorsOpen',
   'cabinSealed',
-  'bracingEnabled',
-  'toleranceEnabled',
   'vb1Outer',
   'vb2Outer'
 ]
@@ -216,14 +215,12 @@ export function applyClearDesign(state) {
       else if (id.includes('Mode') && id.startsWith('port')) el.value = 'area'
       else if (id === 'tsVasUnit') el.value = 'cuft'
       else if (id === 'tsSdUnit') el.value = 'sqin'
-    } else if (el.type === 'range') {
-      el.value = id === 'tolerancePercent' ? '5' : '0'
     } else {
       el.value = ''
     }
   })
 
-  DESIGN_CHECKBOX_IDS.forEach((id) => setCheck(id, false))
+  DESIGN_CHECKBOX_IDS.forEach((id) => setCheck(id, id === 'includeCabin'))
 }
 
 export function downloadDesignJson(jsonString, filename = '6th-order-design.json') {

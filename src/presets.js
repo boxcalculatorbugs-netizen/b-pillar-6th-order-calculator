@@ -2,21 +2,20 @@
  * Series 6th-order wall example — dual 18", 10 cu ft rear @ 25 Hz, 20 cu ft front @ 60 Hz.
  * Rear: internal slot. Front: 22 sq in area port (60 Hz target; large slots cannot tune that high in 20 cu ft).
  */
-export const STARTUP_PRESET_VERSION = 3
+export const STARTUP_PRESET_VERSION = 4
 
 export const SERIES_STARTUP_PRESET = {
   orderType: 'series',
   cabinLength: 115,
   cabinVolume: 75,
+  includeCabin: true,
   doorsOpen: false,
   maxDepth: 32,
   maxHeight: 16,
   maxWidth: 58,
   wallThickness: 1.5,
-  bracingPercent: 12,
-  bracingEnabled: true,
-  tolerancePercent: 8,
-  toleranceEnabled: true,
+  baffleThickness: 0.75,
+  portThickness: 0.75,
   driverSize: 18,
   driverCount: 2,
   fb1: 25,
@@ -25,7 +24,6 @@ export const SERIES_STARTUP_PRESET = {
   port1Mode: 'slot',
   port1SlotW: 18,
   port1SlotH: 3.5,
-  port1Wall: 0.75,
   port1CommonWalls: 2,
   fb2: 60,
   vb2Basis: 'net',
@@ -34,7 +32,6 @@ export const SERIES_STARTUP_PRESET = {
   port2Area: 22,
   port2SlotW: 28,
   port2SlotH: 5,
-  port2Wall: 0.75,
   port2CommonWalls: 0,
   tsFs: 32,
   tsQts: 0.38,
@@ -56,15 +53,14 @@ export function applyStartupPreset() {
   set('orderType', p.orderType)
   set('cabinLength', p.cabinLength)
   set('cabinVolume', p.cabinVolume)
+  setCheck('includeCabin', p.includeCabin !== false)
   setCheck('doorsOpen', p.doorsOpen)
   set('maxDepth', p.maxDepth)
   set('maxHeight', p.maxHeight)
   set('maxWidth', p.maxWidth)
   set('wallThickness', p.wallThickness)
-  setCheck('bracingEnabled', p.bracingEnabled)
-  set('bracingPercent', p.bracingPercent)
-  setCheck('toleranceEnabled', p.toleranceEnabled)
-  set('tolerancePercent', p.tolerancePercent)
+  set('baffleThickness', p.baffleThickness)
+  set('portThickness', p.portThickness)
   set('driverSize', p.driverSize)
   set('driverCount', p.driverCount)
   set('vb1Basis', p.vb1Basis)
@@ -73,7 +69,7 @@ export function applyStartupPreset() {
   set('port1Mode', p.port1Mode)
   set('port1SlotW', p.port1SlotW)
   set('port1SlotH', p.port1SlotH)
-  set('port1Wall', p.port1Wall)
+  set('port1Wall', '')
   set('port1CommonWalls', p.port1CommonWalls)
   set('port1Length', '')
   set('vb2Basis', p.vb2Basis)
@@ -83,7 +79,7 @@ export function applyStartupPreset() {
   if (p.port2Area != null) set('port2Area', p.port2Area)
   set('port2SlotW', p.port2SlotW)
   set('port2SlotH', p.port2SlotH)
-  set('port2Wall', p.port2Wall)
+  set('port2Wall', '')
   set('port2CommonWalls', p.port2CommonWalls)
   set('port2Length', '')
   if (p.tsFs != null) set('tsFs', p.tsFs)

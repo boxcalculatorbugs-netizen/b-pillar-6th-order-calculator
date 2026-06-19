@@ -30,7 +30,7 @@ export function estimateExcursionAtFreq(xmaxMm, freqHz, fb1, fb2, fh) {
   const distFromFb2 = Math.abs(Math.log2(freqHz / effectiveFb2))
   const minDist = Math.min(distFromCenter, distFromFb1, distFromFb2)
 
-  const multiplier = 0.35 + Math.min(3.5, minDist * 1.8 + (1 / (minDist + 0.15)) * 0.25)
+  const multiplier = 0.35 + Math.min(3.5, minDist * 1.8 + (1 / (minDist + 0.15)) * 0.12)
   const excursionMm = xmaxMm * multiplier
   const ratio = excursionMm / xmaxMm
 
@@ -58,9 +58,9 @@ export function getExcursionWarnings(ts, fb1, fb2, orderType = 'series') {
 
   for (const { label, freq } of checkFreqs) {
     const { excursionMm, ratio } = estimateExcursionAtFreq(ts.Xmax, freq, fb1, fb2, freq)
-    if (ratio > 0.9) {
+    if (ratio > 1.05) {
       warnings.push({
-        level: ratio > 1.05 ? 'red' : 'amber',
+        level: ratio > 1.20 ? 'red' : 'amber',
         message: `Estimated excursion at ${label} (${freq.toFixed(1)} Hz): ${excursionMm.toFixed(1)} mm (${(ratio * 100).toFixed(0)}% of Xmax).`
       })
     }

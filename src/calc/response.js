@@ -186,9 +186,19 @@ export function estimateInCarResponse(
   minHz = 20,
   maxHz = 80,
   orderType = 'series',
-  cabinLeakage = null
+  cabinLeakage = null,
+  includeCabin = true
 ) {
   const passband = passbandForOrderType(orderType, fb1, fb2, minHz, maxHz)
+  if (!includeCabin) {
+    const passbandOnly = passband.map((point) => ({
+      freq: point.freq,
+      passbandDb: point.db,
+      cabinDb: 0,
+      inCarDb: point.db
+    }))
+    return { closed: passbandOnly, open: passbandOnly, legacy: passbandOnly }
+  }
   const points = passband.length - 1
   const cabinClosed = cabinGainCurve(cabinLengthIn, minHz, maxHz, points, false, cabinLeakage)
   const cabinOpen = cabinGainCurve(cabinLengthIn, minHz, maxHz, points, true, null)

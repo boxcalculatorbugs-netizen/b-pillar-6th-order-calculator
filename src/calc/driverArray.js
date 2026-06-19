@@ -41,14 +41,14 @@ export function getPortRatioWarning(portAreaSqIn, totalSdSqIn) {
   const ratio = portAreaSqIn / totalSdSqIn
   const ratioText = `${ratio.toFixed(2)}:1`
 
-  if (ratio < 0.5) {
+  if (ratio < 0.25) {
     return {
       ratio,
       level: 'red',
       message: `${ratioText} — severe port compression likely`
     }
   }
-  if (ratio < 0.75) {
+  if (ratio < 0.45) {
     return {
       ratio,
       level: 'amber',
