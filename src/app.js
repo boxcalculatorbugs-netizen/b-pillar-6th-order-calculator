@@ -738,10 +738,16 @@ function updateTsFourthHint(orderType) {
 function updateOrderTypeUI(orderType) {
   $('appSubtitle').textContent = orderTypeSubtitle(orderType)
 
-  document.querySelectorAll('.ch1-port-field').forEach((el) => {
-    el.classList.toggle('hidden', isFourth(orderType))
+  const hideCh1Ports = isFourth(orderType)
+  document.querySelectorAll('.ch1-port-gate').forEach((el) => {
+    el.classList.toggle('hidden', hideCh1Ports)
   })
-
+  if (!hideCh1Ports) {
+    togglePortMode(1)
+  }
+  if (showChamber2(orderType)) {
+    togglePortMode(2)
+  }
   document.querySelectorAll('.series-port-split').forEach((el) => {
     el.classList.toggle('hidden', orderType !== 'series')
   })
@@ -884,9 +890,7 @@ function scheduleRecalculate() {
 function updateSlotAreaCalc(chamber) {
   const calcEl = $(`port${chamber}SlotCalc`)
   if (!calcEl) return
-  const isSlot = $(`port${chamber}Mode`).value === 'slot'
-  calcEl.classList.toggle('hidden', !isSlot)
-  if (!isSlot) return
+  if ($(`port${chamber}Mode`).value !== 'slot') return
 
   const outerW = toInches(num(`port${chamber}SlotW`))
   const outerH = toInches(num(`port${chamber}SlotH`))
@@ -1324,10 +1328,12 @@ function bindEvents() {
     scheduleRecalculate()
   })
 
-  $('port1FrontShare')?.addEventListener('input', () => {
+  const onPort1FrontShareChange = () => {
     updatePort1FrontShareLabel()
     scheduleRecalculate()
-  })
+  }
+  $('port1FrontShare')?.addEventListener('input', onPort1FrontShareChange)
+  $('port1FrontShare')?.addEventListener('change', onPort1FrontShareChange)
 
   inputIds.forEach((id) => {
     $(id).addEventListener('input', () => {

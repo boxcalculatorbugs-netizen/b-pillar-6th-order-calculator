@@ -304,8 +304,8 @@
               <input type="number" id="vb1Extra" value="0" min="0" step="1" />
               <span class="unit-label">cu in</span>
             </label>
-            <div class="field-group-divider ch1-port-field" aria-hidden="true">Port</div>
-            <label class="port-field ch1-port-field">
+            <div class="field-group-divider ch1-port-gate ch1-port-field" aria-hidden="true">Port</div>
+            <label class="port-field ch1-port-gate ch1-port-field">
               Port input
               <select id="port1Mode">
                 <option value="area">Area (sq in)</option>
@@ -313,7 +313,7 @@
                 <option value="slot" selected>Slot (W × H × L)</option>
               </select>
             </label>
-            <label id="port1CommonWallsLabel" class="port-field ch1-port-field hidden" data-port-modes="slot">
+            <label id="port1CommonWallsLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="slot">
               Common walls shared
               <select id="port1CommonWalls">
                 <option value="0">0 — free / flush external</option>
@@ -322,39 +322,39 @@
                 <option value="3">3 — e.g. corner + back</option>
               </select>
             </label>
-            <label id="port1AreaLabel" class="port-field ch1-port-field" data-port-modes="area">
+            <label id="port1AreaLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="area">
               Port area
               <input type="number" id="port1Area" value="22" min="0" step="0.1" />
               <span class="unit-label area-unit">sq in</span>
             </label>
-            <label id="port1DiamLabel" class="port-field ch1-port-field hidden" data-port-modes="diameter">
+            <label id="port1DiamLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="diameter">
               Port diameter
               <input type="number" id="port1Diam" value="5.5" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
-            <label id="port1SlotWLabel" class="port-field ch1-port-field hidden" data-port-modes="slot">
+            <label id="port1SlotWLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="slot">
               Slot width (outer)
               <input type="number" id="port1SlotW" value="18" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
-            <label id="port1SlotHLabel" class="port-field ch1-port-field hidden" data-port-modes="slot">
+            <label id="port1SlotHLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="slot">
               Slot height (outer)
               <input type="number" id="port1SlotH" value="3.5" min="0" step="0.1" />
               <span class="unit-label length-unit">in</span>
             </label>
-            <label id="port1WallLabel" class="port-field ch1-port-field hidden" data-port-modes="slot">
+            <label id="port1WallLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="slot">
               Port wall thickness
               <input type="number" id="port1Wall" value="" min="0" step="0.125" placeholder="0.75" />
               <span class="unit-label length-unit">in</span>
               <span class="field-hint">Default 0.75 in slot wall MDF if blank</span>
             </label>
-            <label id="port1LengthLabel" class="port-field ch1-port-field hidden" data-port-modes="diameter slot">
+            <label id="port1LengthLabel" class="port-field ch1-port-gate ch1-port-field hidden" data-port-modes="diameter slot">
               Port length (L)
               <input type="number" id="port1Length" value="" min="0" step="0.1" placeholder="Helmholtz if blank" />
               <span class="unit-label length-unit">in</span>
             </label>
-            <p id="port1SlotCalc" class="field-hint port-area-calc port-field ch1-port-field hidden" data-port-modes="slot">Inner opening: — × — in (— sq in)</p>
-            <label class="port-field ch1-port-field series-port-split hidden build-slider-row">
+            <p id="port1SlotCalc" class="field-hint port-area-calc port-field ch1-port-gate ch1-port-field hidden" data-port-modes="slot">Inner opening: — × — in (— sq in)</p>
+            <label class="port-field ch1-port-gate ch1-port-field series-port-split hidden build-slider-row">
               Internal port → front chamber
               <span class="slider-row">
                 <input type="range" id="port1FrontShare" min="0" max="100" step="5" value="0" />
@@ -362,7 +362,7 @@
               </span>
               <span class="field-hint">Assigns internal port displacement between rear and front gross/net math.</span>
             </label>
-            <p id="port1DispCalc" class="field-hint port-field ch1-port-field series-port-split hidden">Port displacement: — (calculated)</p>
+            <p id="port1DispCalc" class="field-hint port-field ch1-port-gate ch1-port-field series-port-split hidden">Port displacement: — (calculated)</p>
           </div>
         </details>
 
