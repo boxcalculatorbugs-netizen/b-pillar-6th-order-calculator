@@ -742,14 +742,17 @@ function updateOrderTypeUI(orderType) {
   document.querySelectorAll('.ch1-port-gate').forEach((el) => {
     el.classList.toggle('hidden', hideCh1Ports)
   })
-  if (!hideCh1Ports) {
+  const ch1Grid = $('chamber1Grid')
+  if (hideCh1Ports) {
+    ch1Grid?.querySelectorAll('[data-port-modes]').forEach((el) => el.classList.add('hidden'))
+  } else {
     togglePortMode(1)
   }
   if (showChamber2(orderType)) {
     togglePortMode(2)
   }
   document.querySelectorAll('.series-port-split').forEach((el) => {
-    el.classList.toggle('hidden', orderType !== 'series')
+    el.classList.toggle('hidden', orderType !== 'series' || hideCh1Ports)
   })
 
   $('chamber2Section')?.classList.toggle('hidden', !showChamber2(orderType))

@@ -85,6 +85,11 @@ export function enhanceNumberInputs(root = document) {
       field.className = 'field'
       parentLabel.classList.forEach((cls) => field.classList.add(cls))
       if (parentLabel.id) field.id = parentLabel.id
+      for (const attr of parentLabel.attributes) {
+        if (attr.name.startsWith('data-')) {
+          field.setAttribute(attr.name, attr.value)
+        }
+      }
 
       const caption = document.createElement('label')
       if (input.id) caption.htmlFor = input.id
