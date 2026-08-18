@@ -591,6 +591,37 @@ function renderTsSuitability(suitability) {
   el.innerHTML = `${suitability.verdict}${score}${notes}`
 }
 
+function renderTsSuggestions(suggestions) {
+  const el = $('tsSuggestionReadout')
+  const btn = $('applyTsBtn')
+  if (!el) return
+
+  if (!suggestions) {
+    el.className = 'ts-suggestions suitability-box neutral'
+    el.textContent =
+      'Enter Fs and Vas to see textbook Vb/Fb suggestions. Chamber volumes and tunings stay as you typed them.'
+    if (btn) btn.disabled = true
+    return
+  }
+
+  const portRows = suggestions.hasPortSuggestions
+    ? `<div class="result-row"><span>Suggested port 1 area</span><span class="val">${fmtArea(suggestions.portArea1SqIn)}</span></div>
+    <div class="result-row"><span>Suggested port 2 area</span><span class="val">${fmtArea(suggestions.portArea2SqIn)}</span></div>`
+    : '<p class="field-hint">Enter Sd (and Xmax) for port-area suggestions.</p>'
+
+  el.className = 'ts-suggestions suitability-box neutral'
+  el.innerHTML = `
+    <strong>Textbook T/S alignment (advisory)</strong>
+    <div class="result-row"><span>Suggested Vb1</span><span class="val">${fmtVol(suggestions.vb1CuFt)}</span></div>
+    <div class="result-row"><span>Suggested Vb2</span><span class="val">${fmtVol(suggestions.vb2CuFt)}</span></div>
+    <div class="result-row"><span>Suggested Fb1</span><span class="val">${suggestions.fb1Hz.toFixed(1)} Hz</span></div>
+    <div class="result-row"><span>Suggested Fb2</span><span class="val">${suggestions.fb2Hz.toFixed(1)} Hz</span></div>
+    ${portRows}
+    <p class="field-hint">Typing T/S never changes your chamber fields. Apply only copies these values after you confirm.</p>
+  `
+  if (btn) btn.disabled = false
+}
+
 function updateChartTabs(result) {
   const includeCabin = result.includeCabin !== false
   const cabinTab = document.querySelector('.tab[data-tab="cabin"]')
@@ -830,6 +861,7 @@ function recalculate() {
   renderCabinResults(result)
   renderWarnings(result.warnings)
   renderTsSuitability(result.tsSuitability)
+  renderTsSuggestions(result.tsSuggestions)
 
   renderDiagram($('diagramContainer'), {
     orderType: result.orderType,
@@ -1015,24 +1047,41 @@ function updateUnitLabels() {
   document.querySelectorAll('.area-unit').forEach((el) => { el.textContent = areaText })
 }
 
+const TS_ALIGN_FIELD_IDS = ['fb1', 'fb2', 'vb1', 'vb2']
+
+function fieldHasEnteredValue(id) {
+  const el = $(id)
+  return Boolean(el && String(el.value).trim() !== '')
+}
+
 function applyTsSuggestions() {
-  const inputs = readInputs()
-  const suggestions = getTsSuggestions(inputs.ts)
+  const suggestions = getTsSuggestions(readInputs().ts)
   if (!suggestions) {
-    alert('Enter at least Fs, Qts, Vas, and Sd to apply suggestions.')
+    alert('Enter at least Fs and Vas to apply suggestions.')
     return
+  }
+
+  const occupied = TS_ALIGN_FIELD_IDS.filter(fieldHasEnteredValue)
+  if (occupied.length) {
+    const portNote = suggestions.hasPortSuggestions ? ' and port areas' : ''
+    const ok = window.confirm(
+      `Apply textbook T/S volumes and tunings?\n\nThis will overwrite Vb1, Vb2, Fb1, and Fb2${portNote}. Suitability analysis does not change your chambers unless you confirm here.`
+    )
+    if (!ok) return
   }
 
   $('fb1').value = suggestions.fb1Hz.toFixed(1)
   $('fb2').value = suggestions.fb2Hz.toFixed(1)
   $('vb1').value = fromCuFt(suggestions.vb1CuFt).toFixed(2)
   $('vb2').value = fromCuFt(suggestions.vb2CuFt).toFixed(2)
-  $('port1Area').value = fromSqIn(suggestions.portArea1SqIn).toFixed(1)
-  $('port2Area').value = fromSqIn(suggestions.portArea2SqIn).toFixed(1)
-  $('port1Mode').value = 'area'
-  $('port2Mode').value = 'area'
-  togglePortMode(1)
-  togglePortMode(2)
+  if (suggestions.hasPortSuggestions) {
+    $('port1Area').value = fromSqIn(suggestions.portArea1SqIn).toFixed(1)
+    $('port2Area').value = fromSqIn(suggestions.portArea2SqIn).toFixed(1)
+    $('port1Mode').value = 'area'
+    $('port2Mode').value = 'area'
+    togglePortMode(1)
+    togglePortMode(2)
+  }
   recalculate()
 }
 
@@ -1381,6 +1430,12 @@ function bindEvents() {
       if (id.startsWith('ts')) updateTsFourthHint($('orderType').value)
       scheduleRecalculate()
     })
+  })
+
+  $('tsSection')?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return
+    if (e.target?.id === 'applyTsBtn') return
+    e.preventDefault()
   })
 
   $('applyTsBtn').addEventListener('click', applyTsSuggestions)

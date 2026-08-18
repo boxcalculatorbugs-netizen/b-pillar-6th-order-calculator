@@ -374,6 +374,7 @@ export function runAll(inputs) {
   const activeCabin2 = doorsOpen ? cabin2Open : cabin2Closed
 
   const tsSuitability = evaluateDriverSuitability(tsForCalc, orderType)
+  // Advisory only — never copied onto chamber1/chamber2 inputs from this result.
   const tsSuggestions = getTsSuggestions(tsForCalc)
 
   const excursion = analyzeChamberExcursion(

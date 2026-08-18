@@ -596,6 +596,23 @@ body {
   margin-top: 4px;
 }
 
+#tsSection #applyTsBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ts-suggestions {
+  margin-top: 8px;
+}
+
+.ts-suggestions .result-row {
+  color: var(--text);
+}
+
+.ts-suggestions .field-hint {
+  margin-top: 8px;
+}
+
 label {
   display: flex;
   flex-direction: column;

@@ -239,7 +239,8 @@
             <label>Pe (W) <input type="number" id="tsPe" step="1" placeholder="800" /></label>
             <label>Vd (cu in) <input type="number" id="tsVd" step="0.1" placeholder="optional" /></label>
           </div>
-          <button type="button" id="applyTsBtn" class="btn secondary">Apply T/S Suggestions</button>
+          <div id="tsSuggestionReadout" class="ts-suggestions suitability-box neutral">Enter Fs and Vas to see textbook Vb/Fb suggestions. Chamber volumes and tunings stay as you typed them.</div>
+          <button type="button" id="applyTsBtn" class="btn secondary" disabled>Apply suggested volumes &amp; tunings…</button>
           <p id="tsFourthHint" class="field-hint hidden">Fs, Vas, and Qts are required for Fcb and compatibility checks. Low Fcb needs <strong>low Fs</strong>, <strong>low Cms</strong> (stiff/low Vas), <strong>Qts ~0.29–0.30</strong>, and enough sealed Vr so Fcb ≤ F2.</p>
           <div id="tsSuitability" class="suitability-box neutral">Enter T/S parameters for suitability analysis.</div>
         </details>
@@ -629,7 +630,7 @@
               <tr><th>Sd</th><td>Effective piston area (sq in). Used for port velocity, port:Sd ratio, and excursion estimates.</td></tr>
               <tr><th>Fs</th><td>Free-air resonance (Hz). Fb1 below ~0.7×Fs risks unloading.</td></tr>
               <tr><th>Qts / Qes</th><td>Total / electrical Q. Lower Qts (&lt;0.45) suits bandpass; Fs/Qes ≥45–50 preferred for 6th order.</td></tr>
-              <tr><th>Vas</th><td>Equivalent compliance volume — scales suggested chamber sizes in T/S suggestions.</td></tr>
+              <tr><th>Vas</th><td>Equivalent compliance volume. Scales <em>advisory</em> textbook chamber sizes (shown under T/S). Never overwrites Vb1/Vb2/Fb1/Fb2 unless you confirm Apply.</td></tr>
               <tr><th>Xmax</th><td>Maximum linear excursion (mm) — drives port velocity and excursion warnings.</td></tr>
               <tr><th>Vd</th><td>Peak displacement volume (cu in). Optional; otherwise Sd × Xmax estimates driver displacement.</td></tr>
               <tr><th>Driver displacement</th><td>Volume occupied by the motor/basket assembly inside the chamber.</td></tr>

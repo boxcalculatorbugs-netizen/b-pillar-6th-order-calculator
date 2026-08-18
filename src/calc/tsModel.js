@@ -96,10 +96,10 @@ export function minPortAreaFromVelocity(sdSqIn, xmaxMm, freqHz, vMaxMps = V_MAX_
 }
 
 export function getTsSuggestions(ts) {
-  if (!hasTsParams(ts)) return null
+  if (!ts?.Fs || !ts?.Vas) return null
 
   const vasCuFt = ts.VasUnit === 'liters' ? litersToCuFt(ts.Vas) : ts.Vas
-  const sdSqIn = ts.SdUnit === 'sqcm' ? sqCmToSqIn(ts.Sd) : ts.Sd
+  const sdSqIn = ts.Sd ? (ts.SdUnit === 'sqcm' ? sqCmToSqIn(ts.Sd) : ts.Sd) : 0
   const xmax = ts.Xmax || 0
 
   const vb1 = vasCuFt * 1.8
@@ -109,8 +109,8 @@ export function getTsSuggestions(ts) {
 
   const minPort1 = minPortAreaFromVelocity(sdSqIn, xmax, fb1)
   const minPort2 = minPortAreaFromVelocity(sdSqIn, xmax, fb2)
-  const portArea1 = Math.max(minPort1, sdSqIn * 0.14)
-  const portArea2 = Math.max(minPort2, sdSqIn * 0.14)
+  const portArea1 = sdSqIn > 0 ? Math.max(minPort1, sdSqIn * 0.14) : 0
+  const portArea2 = sdSqIn > 0 ? Math.max(minPort2, sdSqIn * 0.14) : 0
 
   return {
     vb1CuFt: vb1,
@@ -119,6 +119,7 @@ export function getTsSuggestions(ts) {
     fb2Hz: fb2,
     portArea1SqIn: portArea1,
     portArea2SqIn: portArea2,
+    hasPortSuggestions: sdSqIn > 0,
     driverDisplacementCuFt: estimateDriverDisplacementCuFt({ ...ts, Sd: sdSqIn })
   }
 }

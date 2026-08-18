@@ -29,6 +29,7 @@ import {
   analyzeFourthOrderRatio,
   analyzeFourthOrderCompatibility
 } from '../src/calc/fourthOrder.js'
+import { getTsSuggestions } from '../src/calc/tsModel.js'
 import {
   calculateDoorTuning,
   analyzeDoorTuningCoupling,
@@ -623,6 +624,36 @@ const doorWarning = doorEngineResult.warnings.find((w) => w.message.includes('in
 if (!doorWarning || doorWarning.level !== 'amber') {
   throw new Error('Engine should emit amber door coupling note when aligned to front tuning')
 }
+
+const tsSuggest = getTsSuggestions({ Fs: 38, Qts: 0.38, Vas: 0.343, VasUnit: 'cuft', Sd: 53, SdUnit: 'sqin' })
+if (!tsSuggest) throw new Error('getTsSuggestions should return advisory volumes from Fs/Vas')
+assertClose(tsSuggest.vb1CuFt, 0.343 * 1.8, 0.001, 'Textbook Vb1 = Vas × 1.8')
+assertClose(tsSuggest.fb1Hz, 34.2, 0.05, 'Textbook Fb1 = clamp(Fs × 0.9)')
+
+const tsManualChambers = runAll({
+  orderType: 'series',
+  includeCabin: false,
+  doorsOpen: false,
+  calcMode: 'helmholtz',
+  cabinLengthIn: 70,
+  vehicleInteriorCuFt: 100,
+  ampRackCuFt: 0,
+  wallThicknessIn: 1.5,
+  baffleThicknessIn: 0.75,
+  driverSizeIn: 18,
+  driverCount: 2,
+  ts: { Fs: 38, Qts: 0.38, Vas: 0.343, VasUnit: 'cuft', Sd: 53, SdUnit: 'sqin', Xmax: 18 },
+  chamber1: netChamber({ fbHz: 25, volumeCuFt: 2.4, portAreaSqIn: 22 }),
+  chamber2: netChamber({ fbHz: 60, volumeCuFt: 5.0, portAreaSqIn: 30 })
+})
+assertClose(tsManualChambers.chambers.chamber1.volumeCuFt, 2.4, 0.001, 'T/S suggestions must not overwrite entered Vb1')
+assertClose(tsManualChambers.chambers.chamber1.fbHz, 25, 0.001, 'T/S suggestions must not overwrite entered Fb1')
+assertClose(tsManualChambers.chambers.chamber2.volumeCuFt, 5.0, 0.001, 'T/S suggestions must not overwrite entered Vb2')
+assertClose(tsManualChambers.chambers.chamber2.fbHz, 60, 0.001, 'T/S suggestions must not overwrite entered Fb2')
+if (!tsManualChambers.tsSuggestions) {
+  throw new Error('Engine should still return tsSuggestions as advisory output')
+}
+assertClose(tsManualChambers.tsSuggestions.vb1CuFt, 0.343 * 1.8, 0.001, 'Advisory suggestedVb1 stays on tsSuggestions')
 
 console.log('All calc verification checks passed.')
 console.log(`  Gross-dims Ch.1 net: ${grossResult.chambers.chamber1.volumeCuFt.toFixed(3)} cu ft`)
